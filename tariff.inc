@@ -210,6 +210,8 @@ proc .process hwnd
 	local w_bottom:DWORD
 	local gb_right:DWORD
 	local gb_bottom:DWORD
+	local flag:DWORD
+	mov [flag],0
 	invoke GetWindowRect,[hwnd],tcoord
 	mov eax,[tcoord.right]
 	mov [w_right],eax
@@ -256,7 +258,8 @@ proc .process hwnd
       .metka1:
 	mov eax,[tprogress]
 	invoke SendDlgItemMessage,[hwnd],ID_PROGRESS,PBM_SETPOS,eax,0
-	.if [tprogress]=40
+	.if [tprogress]>39 & [flag]=0
+		mov [flag],1
 		invoke GetDlgItem,[hwnd],ID_4
 		invoke SetWindowPos,eax,HWND_TOP,11,90,0,0,SWP_NOSIZE
 		invoke GetDlgItem,[hwnd],ID_PROGRESS
@@ -277,7 +280,7 @@ proc .process hwnd
 		invoke GetDlgItem,[hwnd],ID_3
 		invoke ShowWindow,eax,SW_SHOW
 		jmp .metka1
-	.elseif [tprogress]=100
+	.elseif [tprogress]=100 & [flag]=1
 		invoke GetDlgItem,[hwnd],ID_TSAVE
 		push eax
 		mov eax,[count]
@@ -391,7 +394,6 @@ proc get_tarif hwnd
 		jmp .exit
 	.endif
 	mov ecx,[vsize]
-	dec eax
 	mov eax,dword [buff_pass]
       .metka2:
 	xor byte [eax],66h
@@ -483,6 +485,21 @@ proc get_tarif hwnd
 	mov [mem2],eax
 	invoke MultiByteToWideChar,CP_UTF8,0,[buff],-1,[mem],MAX_FILE_SIZE*2
 	invoke WideCharToMultiByte,1251,0,[mem],-1,[mem2],MAX_FILE_SIZE*2,0,0
+	invokex preg_match,.preg_curmoney,[mem2],[mem],1,64,0
+	.if eax<>0
+		invoke GlobalAlloc,GPTR,64
+		test eax,eax
+		je @f
+		push eax
+		invoke GetDlgItemTextA,[hwnd],ID_MONEY,eax,64
+		stdcall getdays,[mem],dword [esp]
+		.if eax<>0
+			invoke SetDlgItemTextA,[hwnd],ID_MONEY,dword [esp]
+		.endif
+		pop eax
+		invoke GlobalFree,eax
+		@@:
+	.endif
 	invoke GlobalFree,[mem]
 	invokex preg_match,.preg_tarif,[mem2],[post],2,MAX_FILE_SIZE,0
 	.if eax=0
@@ -602,6 +619,7 @@ proc get_tarif hwnd
 	    db 13,10,'              <span style="font-size: xx-small;">Ежемесячный платеж: <b>*</b> руб.</span>',0
 .preg_name db 'ФИО абонента</td><td>*</td>',0
 .preg_curtarif db 'Тариф</td><td>*</td>',0
+.preg_curmoney db 'Месячный платеж</td><td>* руб.</td>',0
 .preg_money db 'Остаток: <b>*RUR</b>',0
 .preg_selecttarif db "<tr class='selected' >",10,"      <td>*</td>",0
 
@@ -810,6 +828,8 @@ proc save_tarif hwnd
 	invoke GlobalFree,[post]
 	jmp .exit
   .err_connect:
+	invoke GetDlgItem,[hwnd],ID_TSAVE
+	invoke EnableWindow,eax,1
 	invokex DialogPOPUP,err_connect3,1
 	invoke GlobalFree,[buff]
 	invoke GlobalFree,[post]
@@ -851,10 +871,109 @@ proc tWindowProc hwnd, msg, wparam, lparam
 		invoke ShellExecute,[hwnd],'open',site,0,0,SW_SHOW
 	.else
 		invoke ShowWindow,[tOldhwnd],SW_HIDE
-		invoke DialogBoxParamA,[mhandle],IDD_ABOUT,HWND_DESKTOP,aboutproc,0
+		invoke DialogBoxIndirectParamA,[mhandle],TEMPLATE_ABOUT,HWND_DESKTOP,aboutproc,0
 		invoke ShowWindow,[tOldhwnd],SW_SHOW
 	.endif
 .finish:
 	xor eax,eax
+	ret
+endp
+
+proc days b, money, memory
+	local perem:DWORD
+	invoke GetSystemTime,p
+	xor eax,eax
+	mov ax,word [p.wMonth]
+	dec ax
+	mov al,byte [eax+day]
+	cmp al,-1
+	jne .bis_sextus
+	;Год является, високосным если он кратен 4 и при этом не кратен 100, либо кратен 400
+	xor edx,edx
+	xor eax,eax
+	mov ax,word [p.wYear]
+	mov edi,4
+	div edi
+	.if edx=0
+		xor edx,edx
+		xor eax,eax
+		mov ax,word [p.wYear]
+		mov edi,100
+		div edi
+		.if edx=0
+			xor edx,edx
+			xor eax,eax
+			mov ax,word [p.wYear]
+			mov edi,400
+			div edi
+			.if edx=0
+				mov al,29
+			.endif
+		.else
+			mov al,29
+		.endif
+	.else
+		mov al,28
+	.endif
+    .bis_sextus:
+	mov [perem],eax
+	finit
+	fild [perem]
+	fild [b]
+	fdiv st,st1
+	fild [money]
+	fdiv st,st1
+	fisttp [perem]
+	push [perem]
+	.if [perem]>4
+		call @f
+		db ' (~%u Дней)',0
+		@@:
+	.elseif [perem]>1 & [perem]<5
+		call @f
+		db ' (~%u Дня)',0
+		@@:
+	.elseif [perem]=0
+		call @f
+		db ' (%u Дней)',0
+		@@:
+	.else
+		call @f
+		db ' (~%u День)',0
+		@@:
+	.endif
+	invoke wsprintfA,[memory]
+	ret
+endp
+
+proc getdays cur,mem
+	local mem2:DWORD
+	invoke GlobalAlloc,GPTR,64
+	.if eax<>0
+		mov [mem2],eax
+		invoke lstrcpyA,eax,[mem]
+		mov eax,[mem2]
+		mov esi,eax
+		@@:
+		inc eax
+		.if byte [eax]=20h | byte [eax]='.'
+			mov byte [eax],0
+		.else
+			jmp @b
+		.endif
+		mov ecx,10
+		call atol
+		push eax
+		mov esi,[cur]
+		mov ecx,10
+		call atol
+		pop ecx
+		stdcall days,eax,ecx,[mem2]
+		invoke lstrcatA,[mem],[mem2]
+		invoke GlobalFree,[mem2]
+		mov eax,1
+	.else
+		xor eax,eax
+	.endif
 	ret
 endp

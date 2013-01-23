@@ -54,10 +54,12 @@ proc check hwnd
 	invoke EnableWindow,eax,0
 	invoke GetDlgItem,[hwnd],ID_LOGIN
 	invoke EnableWindow,eax,0
-	invoke GetDlgItem,[hMenu],IDM_START
+	invoke GetDlgItem,[hwnd],ID_TARIF
 	invoke EnableWindow,eax,0
 	invoke EnableMenuItem,[hMenu],IDM_START,MF_GRAYED
+	invoke EnableMenuItem,[hMenu],IDM_TARIF,MF_GRAYED
 	invoke SetDlgItemTextA,[hwnd],ID_GET,"Wait"
+	invoke Sleep,2000
 	mov [flag2],1
 	invoke CreateThread,0,0,get_content,[hwnd],0,0
 	mov [death],eax

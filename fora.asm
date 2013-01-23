@@ -1,5 +1,5 @@
 format pe gui 4.0
-include '%fasm_inc2%\WIN32AX.INC'
+include '%fasm_inc%\WIN32AX.INC'
 include 'fmod\#ufmod.inc'
 
 display 'Компилим fora.inc',13,10
@@ -14,19 +14,23 @@ clrMain 	=     0FF0000h	; Обычный цвет ссылки (синий)
 clrActive	=     00000FFh	; Цвет активной ссылки (красный)
 
 TIMER_ID = 667
-TIME_POPUP = 3000
+TIME_POPUP = 4000
 TIME_POPUP2 = 20000
 TIMER_CHECK = 54
 TIME_CHECK = 10*60*1000
 TIMER_UPDATE = 666
 TIME_UPDATE = 60*60*1000
+TIMER_SNOW = 668
+TIME_SNOW = 40*1000
+
+ID_LOGO = 100
+ID_LOGO2 = 101
 
 IDD_MAIN = 666
 IDD_LOGIN = 667
 IDD_POPUP = 668
-IDD_ABOUT = 669
-IDD_TARIF = 670
-IDD_LICENSE = 671
+IDD_TARIF = 669
+IDD_LICENSE = 670
 ID_GET = 1
 ID_LOGIN = 19
 IDL_MONEY = 3
@@ -84,7 +88,30 @@ IDM_LICENSE equ 1008
 coord	RECT	; Размеры окна
 screen	RECT	; Размеры экрана
 ;---
-notes NOTIFYICONDATA
+
+NIIF_NONE = 0
+NIIF_INFO = 1
+NIIF_WARNING = 2
+NIIF_ERROR = 3
+
+struct _NOTIFYICONDATA ;SHELL v5
+  cbSize	   dd ?
+  hWnd		   dd ?
+  uID		   dd ?
+  uFlags	   dd ?
+  uCallbackMessage dd ?
+  hIcon 	   dd ?
+  szTip 	   TCHAR 128 dup (?)
+  dwState	   dd ?
+  dwStateMask	   dd ?
+  szInfo	   TCHAR 256 dup (?)
+  uTimeout	   dd ?
+  szInfoTitle	   TCHAR 64 dup (?)
+  dwInfoFlags	   dd ?
+ends
+
+notes _NOTIFYICONDATA
+notes2 _NOTIFYICONDATA
 trayname db 'FORA NOTIFY',0
 hMenu dd ?
 hMenu2 dd ?
@@ -161,7 +188,7 @@ update_flag db 0
 tray_flag db 0
 flag db 0
 flag2 db 0
-;idhkey dd ?
+firstrun db 0
 hkey_flag db 0
 death dd 1
 sound_flag db 0
@@ -187,6 +214,20 @@ font3 dd ?
 font4 dd ?
 font5 dd ?
 font6 dd ?
+hmutex dd ?
+p SYSTEMTIME
+day db 31,-1,31,30,31,30,31,31,30,31,30,31,0
+lOldWndProc dd ?
+lhwnd dd ?
+OldWndProc2 dd ?
+;LOGO BITMAP
+hBitmap dd ?
+ps PAINTSTRUCT
+rect RECT
+hdc dd ?
+hMemDC dd ?
+nbitmap dd 0
+snow_mutex dd 0
 
 tOldWndProc dd ?
 thUrlBrush  dd ?
@@ -195,8 +236,8 @@ thHyper dd ?
 tOldhwnd dd ?
 
 ;--- ABOUT
-text db 'FORA Notify 0.9.4.1 by Xekep'
-;db 0ah,0ah,'Данная программа написана',0Ah,'для чуть большей юзабельности',0Ah,'говённого новоуральского',0Ah,'интернета от ФОРАТЕК'
+text db 'FORA Notify 0.9.5 by Xekep'
+;db 0ah,0ah,'Данная программа написана',0Ah,'для чуть большей юзабельности',0Ah,'говённого Новоуральского',0Ah,'интернета от ФОРАТЕК.'
 db 0ah,0ah,'Данная программа предназначена',0Ah,'для мониторинга состояния лицевого',0Ah,'счёта оператора форатек.'
 db 0ah,0ah,'Программа распространяется',0Ah,'по лицензии Donationware:'
 db 0ah,'Если программа окажется для вас',0Ah,'полезной, то вы можете сделать',0Ah,'небольшое пожертвование',0Ah,'(ЯДеньги 41001430156154).'
@@ -247,6 +288,20 @@ lmem dd ?
 time_count dd ?
 flag_license db 0
 
+struct DLGTEMPLATE
+  style 	dd ?
+  extendedstule dd ?
+  cdit		dw ?
+  x		dw ?
+  y		dw ?
+  cx		dw ?
+  cy		dw ?
+		dd ?
+ends
+
+TEMPLATE_ABOUT DLGTEMPLATE DS_CENTER+WS_POPUP+WS_VISIBLE,WS_EX_TOPMOST+WS_EX_TOOLWINDOW,0,0,0,156,65;207,80
+
+ti TOOLINFO
 ;include 'antidebug.inc'
 
 .code
@@ -266,7 +321,7 @@ start:
 ;                invoke MessageBoxA,0,'GlobalFree ERR!',0,0
 ;        .endif
 ;        jmp exit
-
+;
 ;opreg1           db      '<div class="content">*</div>*</div>',0
 
 ;        gomneco db '7<8<<<9789<div class="content">123<<</div>123</div><<<8908908908908908089089089089<<0890890<div class="content">456</div>456<<</div>890890890890<<80890890890890890890<div class="content">789</div>789</div>789789',0;FILE '1.htm'  ;
@@ -275,12 +330,15 @@ start:
 ;         db 0
 	call set_seh
 	invoke CreateMutexA,0,0,"fora notify"
+	mov [hmutex],eax
 	invoke GetLastError
 	.if eax=0B7h
+		invoke CloseHandle,[hmutex]
 		invokex DialogPOPUP,'Возможен запуск только одной копии программы!',1
 		invoke Sleep,4000
 		jmp exit
 	.endif
+	invoke LoadLibrary,'riched32.dll'
 	invoke GetCommandLineA
 	push eax
 	invoke lstrlenA,eax
@@ -304,6 +362,10 @@ start:
 	invoke OutputDebugStringA,'%s%s'
 	invoke DialogBoxParamA,[mhandle],IDD_MAIN,HWND_DESKTOP,main,0
        exit:
+	invoke CloseHandle,[hmutex]
+	.if [snow_mutex]<>0
+		invoke CloseHandle,[snow_mutex]
+	.endif
 	invoke ExitProcess,0
 
    error:
@@ -313,7 +375,7 @@ start:
 	mov edi,EXCEPTION_RECORD
 	mov edi,dword [edi+ExceptionAdress]
 	invoke wsprintf,offset_error,lpfmtc,edi,eax,ecx,edx,ebx,esp,ebp,esi,667,416
-	invoke FindWindowA,0,'FORA Notify 0.9.4.1'
+	invoke FindWindowA,0,'FORA Notify 0.9.5'
 	invoke MessageBoxA,eax,offset_error,title_error,MB_ICONWARNING
 	jmp exit
 
@@ -344,15 +406,56 @@ proc main hwnd, msg, wparam, lparam
 	je  .syscommand
 	cmp [msg],WM_LBUTTONDOWN
 	je  .move
-	cmp [msg],WM_CLOSE
-	je  .wmclose
+	;cmp [msg],WM_CLOSE
+	;je  .wmclose
 	cmp [msg],WM_SETCURSOR
 	je .cursor_over_window
 	cmp [msg],WM_CTLCOLORSTATIC
 	je .wmctlcolorstatic
+	cmp [msg],WM_PAINT
+	je .wmpaint
+	xor eax,eax
+	jmp .finish
+    .wmpaint:
+	invoke GetDlgItem,[hwnd],IDL_LOGO
+	push eax
+	invoke BeginPaint,eax,ps
+	mov [hdc],eax
+	invoke CreateCompatibleDC,[hdc]
+	mov [hMemDC],eax
+	invoke SelectObject,[hMemDC],[hBitmap]
+	invoke GetClientRect,dword [esp+4],rect
+	invoke BitBlt,[hdc],0,0,[rect.right],[rect.bottom],[hMemDC],0,0,SRCCOPY
+	invoke DeleteDC,[hMemDC]
+	pop eax
+	invoke EndPaint,eax,ps
 	xor eax,eax
 	jmp .finish
     .wminitdialog:
+	.if [tray_flag]=1
+		invoke ShowWindow,[hwnd],SW_HIDE
+		invoke PostMessageA,[hwnd],WM_SIZE,SIZE_MINIMIZED,0
+	.endif
+	invoke GetSystemTime,p
+	.if [p.wMonth]=1 | [p.wMonth]=12
+		.if [p.wMonth]=12 & [p.wDay]<>31
+			push ID_LOGO
+		.else
+			push ID_LOGO2
+			invoke SetTimer,[hwnd],TIMER_SNOW,TIME_SNOW,0
+			invoke CreateMutexA,0,0,"fora notify logo snow"
+			mov [snow_mutex],eax
+			invoke ReleaseMutex,[snow_mutex]
+		.endif
+	.else
+		push ID_LOGO
+	.endif
+	invoke LoadBitmap,[mhandle]
+	mov [hBitmap],eax
+	.if [firstrun]>0
+		invoke GetDlgItem,[hwnd],IDL_LOGO
+		invokex AddTooltip,eax,'О программе...'
+	.endif
 	invoke CreatePopupMenu
 	mov [hMenu],eax
 	invoke AppendMenu,[hMenu],MF_STRING,IDM_START,str1
@@ -370,6 +473,8 @@ proc main hwnd, msg, wparam, lparam
 	invoke AppendMenu,[hMenu2],MF_STRING,IDM_SITE,str4
 	invoke AppendMenu,[hMenu2],MF_STRING,IDM_LICENSE,str8
 	invoke AppendMenu,[hMenu2],MF_STRING,IDM_ABOUT,str6
+	invoke AppendMenu,[hMenu2],MF_SEPARATOR,0,0
+	invoke AppendMenu,[hMenu2],MF_STRING,IDM_EXIT,str3
 	invoke GlobalAlloc,GPTR,MAX_PATH+10
 	mov [buff_pass],eax
 	invoke GetModuleFileNameA,[mhandle],[buff_pass],MAX_PATH+10
@@ -423,6 +528,7 @@ proc main hwnd, msg, wparam, lparam
 			invoke SendDlgItemMessage,[hwnd],ID_ONOFF,BM_SETCHECK,BST_CHECKED,0
 			.if [notify_flag]=1
 				invoke SetTimer,[hwnd],TIMER_CHECK,TIME_CHECK,0
+				invoke CreateThread,0,0,check,[hwnd],0,0
 			.endif
 		.else
 			.if [notify_flag]=1
@@ -497,6 +603,9 @@ proc main hwnd, msg, wparam, lparam
 	invoke SetLayeredWindowAttributes,[hwnd],0,240,LWA_ALPHA
 	invoke LoadIcon,[mhandle],ID_ICON
 	invoke SendMessageA,[hwnd],WM_SETICON,ICON_BIG,eax
+	invoke GetDlgItem,[hwnd],IDE_NOTIFYMONEY
+	invoke	SetWindowLong,eax,GWL_WNDPROC,WindowProcMoney
+	mov [OldWndProc2],eax
 	invoke GetDlgItem,[hwnd],IDL_WWW
 	mov [hHyper],eax
 	invoke	SetWindowLong,eax,GWL_WNDPROC,WindowProc
@@ -509,10 +618,6 @@ proc main hwnd, msg, wparam, lparam
 	mov [sscolor],clrMain
 	mov eax,[hwnd]
 	mov [Oldhwnd],eax
-	.if [tray_flag]=1
-		invoke ShowWindow,[hwnd],SW_HIDE
-		invoke PostMessageA,[hwnd],WM_SIZE,SIZE_MINIMIZED,0
-	.endif
 	invokex setstat,[hwnd],stat_ok
 	jmp .processed
     .cursor_over_window:
@@ -557,7 +662,7 @@ proc main hwnd, msg, wparam, lparam
 			jmp .processed
 		.elseif ax=IDM_ABOUT
 			invoke Shell_NotifyIcon,NIM_DELETE,notes
-			invoke DialogBoxParamA,[mhandle],IDD_ABOUT,HWND_DESKTOP,aboutproc,0
+			invoke DialogBoxIndirectParamA,[mhandle],TEMPLATE_ABOUT,HWND_DESKTOP,aboutproc,0
 			invoke Shell_NotifyIcon,NIM_ADD,notes
 			jmp .processed
 		.elseif ax=IDM_TARIF
@@ -614,9 +719,8 @@ proc main hwnd, msg, wparam, lparam
 		invoke GetDlgItemTextA,[hwnd],IDE_NOTIFYMONEY,notify_flag2,10
 		.if eax=0
 			invokex DialogPOPUP,stat_err_money,0
-			invokex setstat,stat_err_money
-			invoke SendDlgItemMessage,[hwnd],ID_ONOFF,BM_SETCHECK,BST_UNCHECKED,0
-			jmp .processed
+			mov word [notify_flag2],30h
+			invoke SetDlgItemTextA,[hwnd],IDE_NOTIFYMONEY,notify_flag2
 		.endif
 		invoke RegSetValueEx,[HKey],key_name3,0,REG_SZ,notify_flag2,10
 		.if eax<>0
@@ -632,6 +736,7 @@ proc main hwnd, msg, wparam, lparam
 	.if [hkey_flag]<>0
 		invoke UnregisterHotKey,[hwnd],IDK_MONEY
 	.endif
+	invoke DeleteObject,[hBitmap]
 	invoke DeleteObject,[font4]
 	invoke DeleteObject,[font5]
 	invoke DeleteObject,[font6]
@@ -650,7 +755,7 @@ proc main hwnd, msg, wparam, lparam
 		 jmp .processed
 	.elseif [wparam]=IDM_ABOUT
 		 invoke ShowWindow,[hwnd],SW_HIDE
-		 invoke DialogBoxParamA,[mhandle],IDD_ABOUT,HWND_DESKTOP,aboutproc,0
+		 invoke DialogBoxIndirectParamA,[mhandle],TEMPLATE_ABOUT,HWND_DESKTOP,aboutproc,0
 		 invoke ShowWindow,[hwnd],SW_SHOW
 		 jmp .processed
 	.elseif [wparam]=IDM_LICENSE
@@ -658,6 +763,9 @@ proc main hwnd, msg, wparam, lparam
 		 invoke DialogBoxParamA,[mhandle],IDD_LICENSE,HWND_DESKTOP,plicense,1
 		 invoke ShowWindow,[hwnd],SW_SHOW
 		 jmp .processed
+	.elseif [wparam]=IDM_EXIT
+		 invoke Shell_NotifyIcon,NIM_DELETE,notes
+		 jmp .wmclose
 	.endif
 	xor eax,eax
 	jmp .finish
@@ -671,6 +779,9 @@ proc main hwnd, msg, wparam, lparam
 		invoke CreateThread,0,0,getversion,[hwnd],0,0
 	.elseif [wparam]=TIMER_CHECK
 		invoke CreateThread,0,0,check,[hwnd],0,0
+	.elseif [wparam]=TIMER_SNOW
+		invoke GetDlgItem,[hwnd],IDL_LOGO
+		invoke CreateThread,0,0,snow,eax,0,0
 	.endif
 	jmp .processed
 .hotkey:
@@ -683,17 +794,31 @@ proc main hwnd, msg, wparam, lparam
 .wmsize_tray:
 	.if [wparam]=SIZE_MINIMIZED
 		mov [tray_flag],1
-		mov [notes.cbSize],sizeof.NOTIFYICONDATA
+		mov [notes.cbSize],sizeof._NOTIFYICONDATA
 		push [hwnd]
 		pop [notes.hWnd]
 		mov [notes.uID],IDI_TRAY
 		mov [notes.uFlags],NIF_ICON+NIF_MESSAGE+NIF_TIP
 		mov [notes.uCallbackMessage],WM_SHELLNOTIFY
-		invoke LoadIconA,[mhandle],17
+		invoke LoadIconA,[mhandle],ID_ICON
 		mov [notes.hIcon],eax
 		invoke lstrcpy,notes.szTip,trayname
 		invoke ShowWindow,[hwnd],SW_HIDE
 		invoke Shell_NotifyIcon,NIM_ADD,notes
+		.if [firstrun]=2
+			invoke RtlZeroMemory,notes2,sizeof._NOTIFYICONDATA
+			mov [notes2.cbSize],sizeof._NOTIFYICONDATA
+			push [hwnd]
+			pop [notes2.hWnd]
+			mov [notes2.uID],IDI_TRAY
+			invoke lstrcpyA,notes2.szInfo,"Нажатием кнопки 'X' сворачивается в трей главное окно. Двойной клик по иконке в трее восстановит окно программы. Вызов контекстного меню по нажатию правой кнопкой мыши на иконке в трее."
+			invoke lstrcpyA,notes2.szInfoTitle,'Подсказка'
+			mov [notes2.uTimeout],1000*5
+			mov [notes2.dwInfoFlags],NIIF_INFO
+			mov [notes2.uFlags],NIF_INFO
+			invoke Shell_NotifyIcon,NIM_MODIFY,notes2
+			mov [firstrun],1
+		.endif
 	.endif
 	jmp .processed
 .wnmax:
@@ -722,9 +847,8 @@ proc main hwnd, msg, wparam, lparam
 		invoke GetDlgItemTextA,[hwnd],IDE_NOTIFYMONEY,notify_flag2,10
 		.if eax=0
 			invokex DialogPOPUP,stat_err_money,0
-			invokex setstat,stat_err_money
-			invoke SendDlgItemMessage,[hwnd],ID_ONOFF,BM_SETCHECK,BST_UNCHECKED,0
-			jmp .processed
+			mov word [notify_flag2],30h
+			invoke SetDlgItemTextA,[hwnd],IDE_NOTIFYMONEY,notify_flag2
 		.endif
 		invoke RegSetValueEx,[HKey],key_name3,0,REG_SZ,notify_flag2,10
 		.if eax<>0
@@ -874,6 +998,8 @@ proc main hwnd, msg, wparam, lparam
 			invokex DialogPOPUP,stat_err_autorun1,0
 			invokex setstat,[hwnd],stat_err_autorun1
 			invoke SendDlgItemMessage,[hwnd],ID_AUTORUN,BM_SETCHECK,BST_UNCHECKED,0
+		.else
+			invokex setstat,[hwnd],stat_ok
 		.endif
 	.else
 		invoke RegOpenKeyExA,key_root,subkey,0,KEY_ALL_ACCESS,HKey
@@ -888,6 +1014,8 @@ proc main hwnd, msg, wparam, lparam
 			invokex DialogPOPUP,stat_err_autorun2,0
 			invokex setstat,[hwnd],stat_err_autorun2
 			invoke SendDlgItemMessage,[hwnd],ID_AUTORUN,BM_SETCHECK,BST_CHECKED,0
+		.else
+			invokex setstat,[hwnd],stat_ok
 		.endif
 	.endif
 	invoke RegCloseKey,[HKey]
@@ -1158,10 +1286,24 @@ proc WindowProc hwnd, msg, wparam, lparam
 		invoke ShellExecute,[hwnd],'open',site,0,0,SW_SHOW
 	.else
 		invoke ShowWindow,[Oldhwnd],SW_HIDE
-		invoke DialogBoxParamA,[mhandle],IDD_ABOUT,HWND_DESKTOP,aboutproc,0
+		invoke DialogBoxIndirectParamA,[mhandle],TEMPLATE_ABOUT,HWND_DESKTOP,aboutproc,0
 		invoke ShowWindow,[Oldhwnd],SW_SHOW
 	.endif
 .finish:
+	xor eax,eax
+	ret
+endp
+
+proc WindowProcMoney hwnd, msg, wparam, lparam
+	cmp [msg],WM_CHAR
+	je .char
+      .end!:
+	invoke CallWindowProc,[OldWndProc2],[hwnd],[msg],[wparam],[lparam]
+	ret
+     .char:
+	cmp [wparam],VK_BACK
+	jne .end!
+     .finish:
 	xor eax,eax
 	ret
 endp
@@ -1190,6 +1332,25 @@ proc SetWindowCenter hwnd
 	div ebx
 	mov [dtop.top],eax
 	invoke SetWindowPos,[hwnd],HWND_TOP,[dtop.left],[dtop.top],0,0,SWP_NOSIZE
+	ret
+endp
+
+proc AddTooltip hwnd, text
+	local hinst:DWORD
+	invoke GetWindowLong,[hwnd],GWL_HINSTANCE
+	mov [hinst],eax
+	invoke CreateWindowExA,WS_EX_TOPMOST,TOOLTIPS_CLASS,0,WS_POPUP+TTS_NOPREFIX+TTS_ALWAYSTIP,CW_USEDEFAULT,CW_USEDEFAULT,CW_USEDEFAULT,CW_USEDEFAULT,0,0,eax,0
+	mov esi,eax
+	mov [ti.uFlags],TTF_SUBCLASS
+	mov eax,[hwnd]
+	mov [ti.hwnd],eax
+	mov eax,[hinst]
+	mov [ti.hInst],eax
+	mov [ti.uId],0
+	mov eax,[text]
+	mov [ti.lpszText],eax
+	invoke GetClientRect,[hwnd],ti.Rect
+	invoke SendMessage,esi,TTM_ADDTOOL,0,ti
 	ret
 endp
 
@@ -1244,6 +1405,8 @@ include 'https_request.inc'
 display 'Компилим license.inc',13,10
 
 include 'license.inc'
+
+include 'snow.inc'
 
 .end start
 

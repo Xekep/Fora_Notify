@@ -83,6 +83,8 @@ proc get_content hwnd
 	mov byte [cons+4],0
 	mov edi,[buf]
       .sread3: ;цикл чтени€ сокета
+	cmp dword [cons],01010101h
+	je .end_recv
 	invoke recv,[hsock],edi,512,0 ;читаем по 512 байт за раз
 	cmp eax,-1 ;ошибка чтени€?
 	je .err_no_send ;если да, выведем ошибку
@@ -93,8 +95,6 @@ proc get_content hwnd
 	sub edx,[buf]
 	cmp edx,BUFFER_SIZE-512 ;если возникнет, то выведем ошибку. ≈сли такое часто возникает, то просто нужно увеличить BUFFER_SIZE
 	jae .err_no_send
-	cmp dword [cons],01010101h
-	je .end_recv
 	pushad
 	.if byte [cons+4]=0
 		invokex preg_match,fail_teg,[buf],fail_mess,0,0,-1

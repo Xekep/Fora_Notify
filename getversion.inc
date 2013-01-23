@@ -57,9 +57,50 @@ proc getversion hwnd
 	invoke connect,[hsock],[sin],sizeof.sockaddr_in
 	test eax,eax
 	jne .err_connect
-	invoke lstrlenA,zaprver
+	;;;
+    ;    int 3
+	invoke GlobalAlloc,GPTR,256
+	mov [str],eax
+	invoke lstrcpyA,[str],zaprver
+	invoke lstrcatA,[str],cur_ver
+	invoke lstrcatA,[str],'&user='
+	invoke lstrlenA,[str]
 	push eax
-	invoke send,[hsock],zaprver,eax,0
+	invoke RegOpenKeyExA,key_root,subkey2,0,KEY_QUERY_VALUE,HKey
+	.if eax=0
+		mov [vsize],10
+		mov eax,[esp]
+		add eax,[str]
+		invoke RegQueryValueExA,[HKey],key1,0,lpType,eax,vsize
+		.if eax=0
+			pop eax
+			add eax,[str]
+			mov ecx,[vsize]
+			@@:
+			xor byte [eax],66h
+			inc eax
+			loop @b
+		.else
+			pop eax
+			mov ecx,[str]
+			mov dword [eax+ecx-6],0
+		.endif
+		invoke RegCloseKey,[HKey]
+		invoke lstrcatA,[str],zaprver2
+		invoke lstrlenA,[str]
+	.else
+		pop eax
+		mov ecx,[str]
+		mov dword [eax+ecx-6],0
+		invoke lstrcatA,[str],zaprver2
+		invoke lstrlenA,[str]
+	.endif
+	;;;
+	push eax
+	invoke send,[hsock],[str],eax,0
+	push eax
+	invoke GlobalFree,[str]
+	pop eax
 	pop ecx
 	cmp eax,ecx
 	jne .err_no_send
@@ -129,14 +170,27 @@ proc getversion hwnd
 			.if eax=IDYES
 				invoke ShellExecuteA,0,'Open',[str],0,0,0
 				invokex setstat,[hwnd],stat_ok
+			.elseif eax<>IDNO & [tray_flag]=1
+				invoke RtlZeroMemory,notes2,sizeof._NOTIFYICONDATA
+				mov [notes2.cbSize],sizeof._NOTIFYICONDATA
+				push [hwnd]
+				pop [notes2.hWnd]
+				mov [notes2.uID],IDI_TRAY
+				invoke lstrcpyA,notes2.szInfo,upmessage1
+				invoke lstrcatA,notes2.szInfo,[mem1]
+				invoke lstrcpyA,notes2.szInfoTitle,'UPDATE'
+				mov [notes2.uTimeout],1000*40
+				mov [notes2.dwInfoFlags],NIIF_INFO
+				mov [notes2.uFlags],NIF_INFO
+				invoke Shell_NotifyIcon,NIM_MODIFY,notes2
 			.endif
 			invoke GlobalFree,[msg]
 			invoke GlobalFree,[mem1]
 			invoke GlobalFree,[mem2]
 		.else
 			.if [update_flag]=0
-				invokex preg_match,fail_connect,[buf],preg7,0,0,-1
-				.if eax<>1
+				invokex preg_match,preg7,[buf],fail_connect,0,0,-1
+				.if eax<>0
 					invokex DialogPOPUP,fail_connect,1
 					invokex setstat,[hwnd],fail_connect
 				.else
@@ -193,8 +247,9 @@ proc getversion hwnd
 		invokex setstat,[hwnd],err_mem1
 	jmp .disconnect
 
-zaprver db 'GET /update.php?fora HTTP/1.1',13,10,'User-Agent: XEKEP',13,10,'Host: www.soft.zone66.su',13,10,'Cache-Control: no-cache',13,10,13,10,0
-cur_ver db '0.9.4.1',0
+zaprver db 'GET /update.php?fora&ver=',0
+zaprver2 db ' HTTP/1.1',13,10,'User-Agent: XEKEP',13,10,'Host: www.soft.zone66.su',13,10,'Cache-Control: no-cache',13,10,13,10,0
+cur_ver db '0.9.5',0
 ver_teg db '[ver=*]',0
 preg_update db '[update=*]',0
 uptitle db 'Обновление',0

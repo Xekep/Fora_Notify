@@ -118,5 +118,6 @@ proc getlicense
 		.endif
 	.endif
 	xor eax,eax
+	mov [firstrun],2
 	ret
 endp

@@ -9,7 +9,7 @@ proc sound param
 		push xm_length
 		push xm
 		call uFMOD_PlaySong
-		invoke Sleep,3000
+		invoke Sleep,2880
 		push 0
 		push 0
 		push 0
@@ -35,5 +35,5 @@ proc sound param
 	xm file 'fmod\1.xm'
 	xm_length = $ - xm
 	xm2 file 'fmod\music.xm'
-	xm2_length = $
+	xm2_length = $ - xm2
 endp
