@@ -106,6 +106,7 @@ macro CRC32TableGen data
 
 macro fake_ff
 {
+local .fake,.real
 if DEBUG=0
 	push .real
 	clc
@@ -117,11 +118,45 @@ if DEBUG=0
 end if
 }
 
+macro XOR start,iter
+{
+if DEBUG=0
+	repeat iter
+	load abyte dword from start+%-1
+	store dword abyte xor 0123FFFFFh at start+%-1
+	end repeat
+end if
+}
+
 macro invokex proc,[arg]
 {
-reverse pushd <arg>
-xor edx,edx
-dec edx
-imul ecx,edx,-proc
-common call dword [ecx]
+   common
+    if ~ arg eq
+   reverse
+     pushd arg
+   common
+    end if
+    xor edx,edx
+    dec edx
+    imul ecx,edx,-proc
+    common call dword [ecx]
+}
+
+macro cinvokex proc,[arg]
+{
+  common
+    size@ccall = 0
+    if ~ arg eq
+   reverse
+    pushd arg
+    size@ccall = size@ccall+4
+   common
+    end if
+    xor edx,edx
+    dec edx
+    imul ecx,edx,-proc
+    common call dword [ecx]
+    if size@ccall
+    add esp,size@ccall
+    end if
 }

@@ -7,7 +7,7 @@ entry start
 clrMain 	=     0FF0000h	; Обычный цвет ссылки (синий)
 clrActive	=     00000FFh	; Цвет активной ссылки (красный)
 
-DEBUG=0
+DEBUG=1
 
 if DEBUG
 	display 'debug mode'
@@ -140,7 +140,7 @@ main_title db 'FORA Notify '
 if DEBUG>0
 db 'debug version '
 end if
-cur_ver db '1.1',0
+cur_ver db '1.1.1',0
 stat_err_autorun1 db 'Ошибка добавления в автозапуск',0
 stat_err_autorun2 db 'Ошибка удаления из автозапуска',0
 stat_err_reg db 'Ошибка работы с реестром',0
@@ -300,7 +300,7 @@ thHyper dd ?
 tOldhwnd dd ?
 
 ;--- ABOUT
-text db 'FORA Notify 1.1 by Xekep'
+text db 'FORA Notify 1.1.1 by Xekep'
 ;db 0ah,0ah,'Данная программа написана',0Ah,'для чуть большей юзабельности',0Ah,'говённого Новоуральского',0Ah,'интернета от ФОРАТЕК.'
 db 0ah,0ah,'Данная программа предназначена',0Ah,'для мониторинга состояния лицевого',0Ah,'счёта оператора форатек.'
 db 0ah,0ah,'Программа распространяется',0Ah,'по лицензии Donationware:'
@@ -361,6 +361,7 @@ ends
 TEMPLATE_ABOUT DLGTEMPLATE DS_CENTER+WS_POPUP+WS_VISIBLE,WS_EX_TOPMOST+WS_EX_TOOLWINDOW,0,0,0,156,65;207,80
 
 CRC32 crc32str,crc32strings_start,crc32strings_end-crc32strings_start
+XOR crc32strings_start,crc32strings_end-crc32strings_start
 
 section '.data0' code readable executable
 start:
@@ -369,6 +370,7 @@ start:
 	mov [hmutex],eax
 	invoke GetLastError
 	.if eax=0B7h
+		invoke CloseHandle,[hmutex]
 		invoke DialogBoxParamA,[mhandle],IDD_POPUP,HWND_DESKTOP,POPUP,'Возможен запуск только одной копии программы!'
 		jmp exit
 	.endif
@@ -1472,3 +1474,4 @@ include 'tea.asm'
 
 crc32code_end:
 CRC32 crc32code,start,crc32code_end-start
+XOR start,crc32code_end-start

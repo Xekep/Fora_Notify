@@ -114,7 +114,7 @@ proc tarifproc hwnd, msg, wparam, lparam
 	pop edi esi ebx
 	ret
     .move:
-	.if [tprogress]=100
+	.if [tprogress]=101
 		invoke SendMessage,[hwnd],0a1h,2,0
 	.endif
 	jmp .processed
@@ -632,37 +632,26 @@ proc save_tarif hwnd
 	test eax,eax
 	je .err_mem
 	mov [token],eax
-	mov [vsize],64
 	invoke RegOpenKeyExA,key_root,subkey2,0,KEY_QUERY_VALUE,HKey
 	.if eax<>0
 		stdcall DialogPOPUP,err_acc,1
 		jmp .exit
 	.endif
 	invoke GlobalAlloc,GPTR,64
-	mov dword [buff_login],eax
-	invoke RegQueryValueExA,[HKey],key1,0,lpType,dword [buff_login],vsize
+	mov [buff_login],eax
+	mov [vsize],64
+	invoke RegQueryValueExA,[HKey],key1,0,lpType,eax,vsize
 	.if eax<>0
 		invoke RegCloseKey,[HKey]
 		stdcall DialogPOPUP,err_acc,1
-		invoke GlobalFree,dword [buff_login]
+		invoke GlobalFree,[buff_login]
 		jmp .exit
 	.endif
-	mov ecx,[vsize]
-	mov eax,dword [buff_login]
-	.if byte [eax]<>0
-		invoke RegCloseKey,[HKey]
-		stdcall DialogPOPUP,err_acc,1
-		invoke GlobalFree,dword [buff_login]
-		jmp .exit
-	.endif
-      .metka66:
-	xor byte [eax],66h
-	inc eax
-	loop .metka66
+	stdcall TEAdecrypt,[buff_login],[vsize]
 	mov [vsize],64
 	invoke GlobalAlloc,GPTR,64
-	mov dword [buff_pass],eax
-	invoke RegQueryValueExA,[HKey],key2,0,lpType,dword [buff_pass],vsize
+	mov [buff_pass],eax
+	invoke RegQueryValueExA,[HKey],key2,0,lpType,[buff_pass],vsize
 	.if eax<>0
 		invoke RegCloseKey,[HKey]
 		stdcall DialogPOPUP,err_acc,1
@@ -670,13 +659,7 @@ proc save_tarif hwnd
 		invoke GlobalFree,dword [buff_login]
 		jmp .exit
 	.endif
-	mov ecx,[vsize]
-	dec eax
-	mov eax,dword [buff_pass]
-      .metka67:
-	xor byte [eax],66h
-	inc eax
-	loop .metka67
+	stdcall TEAdecrypt,[buff_pass],[vsize]
 	invoke RegCloseKey,[HKey]
 	invoke GlobalAlloc,GPTR,MAX_FILE_SIZE;
 	test eax,eax
@@ -684,7 +667,7 @@ proc save_tarif hwnd
 	mov [buff],eax;
 	invoke GlobalAlloc,GPTR,MAX_FILE_SIZE
 	.if eax=0
-		invoke GlobalFree,[buff];
+		invoke GlobalFree,[buff]
 		invoke GlobalFree,dword [buff_pass]
 		invoke GlobalFree,dword [buff_login]
 		jmp .err_mem

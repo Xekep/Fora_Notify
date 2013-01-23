@@ -12,11 +12,9 @@ proc TEAencrypt text,size
      endl
 
 	pusha
-	lea eax,[KeyB]
-	invoke RtlZeroMemory,eax,17
 	stdcall TEAgetkey
 	lea esi,[KeyB]
-	cinvoke wsprintfA,esi,'%0.8X%0.8X',ecx,eax
+	cinvokex wsprintfA,esi,'%0.8X%0.8X',ecx,eax
 
 	xor edx,edx
 	mov eax,[size]
@@ -97,11 +95,9 @@ proc TEAdecrypt text,size
      endl
 
 	pusha
-	lea eax,[KeyB]
-	invoke RtlZeroMemory,eax,17
 	stdcall TEAgetkey
 	lea esi,[KeyB]
-	cinvoke wsprintfA,esi,'%0.8X%0.8X',ecx,eax
+	cinvokex wsprintfA,esi,'%0.8X%0.8X',ecx,eax
 
 	xor edx,edx
 	mov eax,[size]
@@ -179,12 +175,12 @@ proc TEAgetkey
 	local arg2:DWORD
 
 	lea eax,[wdir]
-	invoke GetWindowsDirectoryA,eax,256
+	invokex GetWindowsDirectoryA,eax,256
 	lea eax,[wdir]
 	mov byte [eax+3],0
 	lea ecx,[arg1]
 	lea ebx,[arg2]
-	invoke GetVolumeInformationA,eax,0,0,ebx,ecx,ecx,0,0
+	invokex GetVolumeInformationA,eax,0,0,ebx,ecx,ecx,0,0
 	imul ecx,[arg2],24924925h
 	imul eax,[arg2],88C6E951h
 	ret

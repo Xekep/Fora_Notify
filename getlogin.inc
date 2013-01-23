@@ -14,7 +14,7 @@ proc getlogin hwnd, msg, wparam, lparam
 	jmp .finish
      .wmcommand:
 	cmp [wparam],BN_CLICKED shl 16 + IDCANCEL
-	je .exit
+	je .exit2
 	cmp [wparam],BN_CLICKED shl 16 + ID_SAVE
 	je .save
 	jmp .processed
@@ -130,6 +130,7 @@ proc getlogin hwnd, msg, wparam, lparam
 	invoke GlobalFree,[buff_pass]
      .exit:
 	invoke RegCloseKey,[HKey]
+     .exit2:
 	invoke EndDialog,[hwnd],0
 	ret
    .errmsg db 'Ошибка сохранения данных',0

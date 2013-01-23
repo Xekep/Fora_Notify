@@ -206,7 +206,8 @@ proc get_content hwnd,pty
 				cmp ecx,eax
 				jg .negativ
 				je .negativ
-				.if [sound_flag]=1
+				stdcall getwinfullscr
+				.if [sound_flag]=1 & eax =0
 					invoke CreateThread,0,0,sound,1,0,0
 				.endif
 				stdcall DialogPOPUP,money1,1
