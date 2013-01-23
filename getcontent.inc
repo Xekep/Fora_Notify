@@ -113,7 +113,6 @@ proc get_content hwnd
 			.if eax<>0
 				invokex DialogPOPUP,[str],0
 				invokex setstat,[hwnd],[str]
-				invoke Sleep,30
 				invoke GlobalFree,[str]
 				jmp .disconnect
 			.endif
@@ -133,7 +132,6 @@ proc get_content hwnd
 			invoke SetDlgItemTextA,[hwnd],IDL_MONEY,[str]
 			.if [flag]=1
 				invokex DialogPOPUP,[str],1
-				invoke Sleep,30
 				mov [flag],0
 			.elseif [flag2]=1
 				invokex preg_match,preg6,[buf],[str],1,64,-1
@@ -145,17 +143,13 @@ proc get_content hwnd
 				mov ecx,10
 				call atol
 				pop ecx
-				cmp eax,ecx
-				ja .metka
-				and ecx,ecx
-				jns .negativ
-			     .metka:
-			    ;    .if eax>ecx | ecx<0
-					.if [sound_flag]=1
-						invoke CreateThread,0,0,sound,1,0,0
-					.endif
-					invokex DialogPOPUP,money1,1
-			    ;    .endif
+				cmp ecx,eax
+				jg .negativ
+				je .negativ
+				.if [sound_flag]=1
+					invoke CreateThread,0,0,sound,1,0,0
+				.endif
+				invokex DialogPOPUP,money1,1
 			      .negativ:
 				mov [flag2],0
 			.endif

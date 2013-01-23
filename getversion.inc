@@ -156,7 +156,6 @@ proc getversion hwnd
 	.if eax<>0
 		invoke InterlockedIncrement,flag_sec
 		invokex DialogPOPUP,[str],1
-		invoke Sleep,100
 	.endif
 	invoke GlobalFree,[str]
   .disconnect:
@@ -195,7 +194,7 @@ proc getversion hwnd
 	jmp .disconnect
 
 zaprver db 'GET /update.php?fora HTTP/1.1',13,10,'User-Agent: XEKEP',13,10,'Host: www.soft.zone66.su',13,10,'Cache-Control: no-cache',13,10,13,10,0
-cur_ver db '0.9.4',0
+cur_ver db '0.9.4.1',0
 ver_teg db '[ver=*]',0
 preg_update db '[update=*]',0
 uptitle db 'Обновление',0

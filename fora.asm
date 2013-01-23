@@ -1,5 +1,5 @@
 format pe gui 4.0
-include '%fasm_inc%\WIN32AX.INC'
+include '%fasm_inc2%\WIN32AX.INC'
 include 'fmod\#ufmod.inc'
 
 display 'Компилим fora.inc',13,10
@@ -14,13 +14,21 @@ clrMain 	=     0FF0000h	; Обычный цвет ссылки (синий)
 clrActive	=     00000FFh	; Цвет активной ссылки (красный)
 
 TIMER_ID = 667
+TIME_POPUP = 3000
+TIME_POPUP2 = 20000
+TIMER_CHECK = 54
+TIME_CHECK = 10*60*1000
+TIMER_UPDATE = 666
+TIME_UPDATE = 60*60*1000
+
 IDD_MAIN = 666
 IDD_LOGIN = 667
 IDD_POPUP = 668
 IDD_ABOUT = 669
 IDD_TARIF = 670
+IDD_LICENSE = 671
 ID_GET = 1
-ID_LOGIN = 2
+ID_LOGIN = 19
 IDL_MONEY = 3
 IDL_DATA = 4
 IDL_DOGOVOR = 5
@@ -54,8 +62,7 @@ ID_3 = 6
 ID_4 = 7
 ID_TSAVE = 10
 
-IDK_BACK = 2
-IDK_MTRAY = 3
+IDK_MONEY = 1
 
 BUFFER_SIZE = 50000
 UDM_SETRANGE32 = 046fh
@@ -70,6 +77,7 @@ IDM_SITE equ 1004
 IDM_UPDATE equ 1005
 IDM_ABOUT equ 1006
 IDM_TARIF equ 1007
+IDM_LICENSE equ 1008
 
 .data
 ;---
@@ -125,6 +133,7 @@ key_name3 db 'flag2',0
 key_name4 db 'update',0
 key_name5 db 'HOTKEY',0
 key_name6 db 'flag3',0
+key_name7 db 'license',0
 command db ' -autorun',0
 str1 db 'СТАРТ',0
 str2 db 'Главное окно',0
@@ -133,6 +142,7 @@ str4 db 'Сайт разработчика',0
 str5 db 'Проверить обновление',0
 str6 db 'О программе...',0
 str7 db 'Сменить тариф',0
+str8 db 'Лицензия',0
 site db 'http://www.zone66.su',0
 host2 db 'www.soft.zone66.su',0
 flagg db 1
@@ -151,10 +161,9 @@ update_flag db 0
 tray_flag db 0
 flag db 0
 flag2 db 0
-idhkey dd ?
+;idhkey dd ?
 hkey_flag db 0
 death dd 1
-stop db 0
 sound_flag db 0
 pOldProc2 dd ?
 hMBHook dd ?
@@ -172,6 +181,12 @@ press dd ?
 tmem dd ?
 cur dd ?
 tselect dd ?
+font1 dd ?
+font2 dd ?
+font3 dd ?
+font4 dd ?
+font5 dd ?
+font6 dd ?
 
 tOldWndProc dd ?
 thUrlBrush  dd ?
@@ -180,11 +195,13 @@ thHyper dd ?
 tOldhwnd dd ?
 
 ;--- ABOUT
-text db 'FORA Notify 0.9.4 by Xekep'
+text db 'FORA Notify 0.9.4.1 by Xekep'
 ;db 0ah,0ah,'Данная программа написана',0Ah,'для чуть большей юзабельности',0Ah,'говённого новоуральского',0Ah,'интернета от ФОРАТЕК'
 db 0ah,0ah,'Данная программа предназначена',0Ah,'для мониторинга состояния лицевого',0Ah,'счёта оператора форатек.'
+db 0ah,0ah,'Программа распространяется',0Ah,'по лицензии Donationware:'
+db 0ah,'Если программа окажется для вас',0Ah,'полезной, то вы можете сделать',0Ah,'небольшое пожертвование',0Ah,'(ЯДеньги 41001430156154).'
 db 0ah,0ah,'Особую благодарность, за неоценимую',0Ah,'помощь  в тестировании программы,',0Ah,'хочу выразить X ColdDeath X',27h,'у и Mallary.'
-db 0ah,0ah,'Если программа окажется для вас',0Ah,'полезной, то вы можете сделать',0Ah,'небольшое пожертвование',0Ah,'(ЯДеньги 41001430156154).',0Ah,'Предложения и пожелания',0Ah,'пишите на soft.zone66.su.'
+db 0Ah,0Ah,'Предложения и пожелания',0Ah,'пишите на soft.zone66.su.'
 db 0ah,0ah,'I wish you a good day and fun :)',0
 
 perem1 dd ?
@@ -221,16 +238,49 @@ dtop RECT
 ;
 title_error   db  'Something Wrong',0
 offset_error  rb  200
-lpfmtc	      db  'offset: %0.8X',13,10,13,10,'Registers:',13,10,'eax:',09,'%0.8X',13,10,'ecx:',09,'%0.8X',13,10,\
+lpfmtc	      db  'Address: %0.8X',13,10,13,10,'Registers:',13,10,'eax:',09,'%0.8X',13,10,'ecx:',09,'%0.8X',13,10,\
 		  'edx:',09,'%0.8X',13,10,'ebx:',09,'%0.8X',13,10,'esp:',09,'%0.8X',13,10,'ebp:',09,'%0.8X',13,10,'esi:',09,'%0.8X',\
 		  13,10,13,10,09,'Coded by Xekep',13,10,09,'ICQ: %u-%u',13,10,09,'PURE 100%% ASM',0
 
-;
+;--- license
+lmem dd ?
+time_count dd ?
+flag_license db 0
+
 ;include 'antidebug.inc'
 
 .code
 start:
+;        invoke GlobalAlloc,GPTR,50000
+;        push eax
+;        invokex preg_match,opreg1,gomneco,eax,2,50000,20h    ;'<title>*</title>'
+;        .if eax=0
+;                invoke MessageBoxA,0,'PARSER ERR!',0,0
+;        .else
+;                mov eax,[esp]
+;                invoke MessageBoxA,0,eax,0,0
+;       .endif
+;        pop eax
+;        invoke GlobalFree,eax
+;       .if eax<>0
+;                invoke MessageBoxA,0,'GlobalFree ERR!',0,0
+;        .endif
+;        jmp exit
+
+;opreg1           db      '<div class="content">*</div>*</div>',0
+
+;        gomneco db '7<8<<<9789<div class="content">123<<</div>123</div><<<8908908908908908089089089089<<0890890<div class="content">456</div>456<<</div>890890890890<<80890890890890890890<div class="content">789</div>789</div>789789',0;FILE '1.htm'  ;
+
+
+;         db 0
 	call set_seh
+	invoke CreateMutexA,0,0,"fora notify"
+	invoke GetLastError
+	.if eax=0B7h
+		invokex DialogPOPUP,'Возможен запуск только одной копии программы!',1
+		invoke Sleep,4000
+		jmp exit
+	.endif
 	invoke GetCommandLineA
 	push eax
 	invoke lstrlenA,eax
@@ -240,16 +290,16 @@ start:
 	invoke lstrcmpA,eax,command
 	.if eax=0
 		mov [tray_flag],1
-		invoke Sleep,3000
+		invoke Sleep,5000
 	.endif
 	invoke GetModuleHandleA,0
 	mov [mhandle],eax
-	invoke CreateMutexA,0,0,"fora notify"
-	invoke GetLastError
-	.if eax=0B7h
-		invokex DialogPOPUP,'Возможен запуск только одной копии программы!',1
-		invoke Sleep,3000
-		jmp exit
+	invokex getlicense
+	.if eax=0
+		invoke DialogBoxParamA,[mhandle],IDD_LICENSE,HWND_DESKTOP,plicense,0
+		.if eax=-1
+			jmp exit
+		.endif
 	.endif
 	invoke OutputDebugStringA,'%s%s'
 	invoke DialogBoxParamA,[mhandle],IDD_MAIN,HWND_DESKTOP,main,0
@@ -263,7 +313,7 @@ start:
 	mov edi,EXCEPTION_RECORD
 	mov edi,dword [edi+ExceptionAdress]
 	invoke wsprintf,offset_error,lpfmtc,edi,eax,ecx,edx,ebx,esp,ebp,esi,667,416
-	invoke FindWindow,0,'FORA Notify 0.9.4'
+	invoke FindWindowA,0,'FORA Notify 0.9.4.1'
 	invoke MessageBoxA,eax,offset_error,title_error,MB_ICONWARNING
 	jmp exit
 
@@ -303,11 +353,6 @@ proc main hwnd, msg, wparam, lparam
 	xor eax,eax
 	jmp .finish
     .wminitdialog:
-	invoke RegisterHotKey,[hwnd],IDK_MTRAY,0,VK_ESCAPE
-	.if [tray_flag]=1
-		invoke ShowWindow,[hwnd],SW_HIDE
-		invoke PostMessageA,[hwnd],WM_SIZE,SIZE_MINIMIZED,0
-	.endif
 	invoke CreatePopupMenu
 	mov [hMenu],eax
 	invoke AppendMenu,[hMenu],MF_STRING,IDM_START,str1
@@ -315,6 +360,7 @@ proc main hwnd, msg, wparam, lparam
 	invoke AppendMenu,[hMenu],MF_STRING,IDM_TARIF,str7
 	invoke AppendMenu,[hMenu],MF_STRING,IDM_SITE,str4
 	invoke AppendMenu,[hMenu],MF_STRING,IDM_UPDATE,str5
+	invoke AppendMenu,[hMenu],MF_STRING,IDM_LICENSE,str8
 	invoke AppendMenu,[hMenu],MF_STRING,IDM_ABOUT,str6
 	invoke AppendMenu,[hMenu],MF_SEPARATOR,0,0
 	invoke AppendMenu,[hMenu],MF_STRING,IDM_EXIT,str3
@@ -322,6 +368,7 @@ proc main hwnd, msg, wparam, lparam
 	mov [hMenu2],eax
 	invoke AppendMenu,[hMenu2],MF_SEPARATOR,0,0
 	invoke AppendMenu,[hMenu2],MF_STRING,IDM_SITE,str4
+	invoke AppendMenu,[hMenu2],MF_STRING,IDM_LICENSE,str8
 	invoke AppendMenu,[hMenu2],MF_STRING,IDM_ABOUT,str6
 	invoke GlobalAlloc,GPTR,MAX_PATH+10
 	mov [buff_pass],eax
@@ -375,7 +422,7 @@ proc main hwnd, msg, wparam, lparam
 			invoke SetDlgItemTextA,[hwnd],IDE_NOTIFYMONEY,notify_flag2
 			invoke SendDlgItemMessage,[hwnd],ID_ONOFF,BM_SETCHECK,BST_CHECKED,0
 			.if [notify_flag]=1
-				invoke CreateThread,0,0,check,[hwnd],0,0
+				invoke SetTimer,[hwnd],TIMER_CHECK,TIME_CHECK,0
 			.endif
 		.else
 			.if [notify_flag]=1
@@ -398,7 +445,7 @@ proc main hwnd, msg, wparam, lparam
 			.if [update_flag]=1
 				invoke SendDlgItemMessage,[hwnd],ID_UPDATE,BM_SETCHECK,BST_CHECKED,0
 				invoke CreateThread,0,0,getversion,[hwnd],0,0
-				invoke SetTimer,[hwnd],666,60*60*1000,0
+				invoke SetTimer,[hwnd],TIMER_UPDATE,TIME_UPDATE,0
 			.endif
 		.else
 			invoke RegCloseKey,[HKey]
@@ -411,8 +458,7 @@ proc main hwnd, msg, wparam, lparam
 			invoke RegCloseKey,[HKey]
 			.if [hkey_flag]=1
 				invoke SendDlgItemMessage,[hwnd],ID_HOTKEY,BM_SETCHECK,BST_CHECKED,0
-				mov [idhkey],1
-				invoke RegisterHotKey,[hwnd],1,MOD_ALT,4Dh
+				invoke RegisterHotKey,[hwnd],IDK_MONEY,MOD_ALT,4Dh
 			.endif
 		.else
 			invoke RegCloseKey,[HKey]
@@ -435,20 +481,17 @@ proc main hwnd, msg, wparam, lparam
 	invoke GetDlgItem,[hwnd],ID_UPDOWN
 	invoke SendMessage,eax,UDM_SETRANGE32,0,15000
 	invoke CreateFontW,26,0,0,0,1000,0,0,0,DEFAULT_CHARSET,0,0,ANTIALIASED_QUALITY,DEFAULT_PITCH or FF_DONTCARE,"Arial"
-	push eax
+	mov [font4],eax
 	invoke GetDlgItem,[hwnd],ID_GET
-	pop ecx
-	invoke SendMessage,eax,WM_SETFONT,ecx,TRUE
+	invoke SendMessage,eax,WM_SETFONT,[font4],TRUE
 	invoke CreateFontW,20,0,0,0,1000,0,0,0,DEFAULT_CHARSET,0,0,ANTIALIASED_QUALITY,DEFAULT_PITCH or FF_DONTCARE,"Arial"
-	push eax
+	mov [font5],eax
 	invoke GetDlgItem,[hwnd],99
-	pop ecx
-	invoke SendMessage,eax,WM_SETFONT,ecx,TRUE
+	invoke SendMessage,eax,WM_SETFONT,[font5],TRUE
 	invoke CreateFontW,15,0,0,0,400,0,0,0,DEFAULT_CHARSET,0,0,ANTIALIASED_QUALITY,DEFAULT_PITCH or FF_DONTCARE,"Arial"
-	push eax
+	mov [font6],eax
 	invoke GetDlgItem,[hwnd],IDL_STAT
-	pop ecx
-	invoke SendMessage,eax,WM_SETFONT,ecx,TRUE
+	invoke SendMessage,eax,WM_SETFONT,[font6],TRUE
 	invoke SetWindowPos,[hwnd],HWND_TOPMOST,0,0,0,0,SWP_NOMOVE+SWP_NOSIZE
 	invoke SetWindowLongA,[hwnd],GWL_EXSTYLE,WS_EX_LAYERED,0
 	invoke SetLayeredWindowAttributes,[hwnd],0,240,LWA_ALPHA
@@ -466,6 +509,10 @@ proc main hwnd, msg, wparam, lparam
 	mov [sscolor],clrMain
 	mov eax,[hwnd]
 	mov [Oldhwnd],eax
+	.if [tray_flag]=1
+		invoke ShowWindow,[hwnd],SW_HIDE
+		invoke PostMessageA,[hwnd],WM_SIZE,SIZE_MINIMIZED,0
+	.endif
 	invokex setstat,[hwnd],stat_ok
 	jmp .processed
     .cursor_over_window:
@@ -510,9 +557,7 @@ proc main hwnd, msg, wparam, lparam
 			jmp .processed
 		.elseif ax=IDM_ABOUT
 			invoke Shell_NotifyIcon,NIM_DELETE,notes
-			invoke UnregisterHotKey,[hwnd],IDK_MTRAY
 			invoke DialogBoxParamA,[mhandle],IDD_ABOUT,HWND_DESKTOP,aboutproc,0
-			invoke RegisterHotKey,[hwnd],IDK_MTRAY,0,VK_ESCAPE
 			invoke Shell_NotifyIcon,NIM_ADD,notes
 			jmp .processed
 		.elseif ax=IDM_TARIF
@@ -520,10 +565,20 @@ proc main hwnd, msg, wparam, lparam
 			invoke DialogBoxParamA,[mhandle],IDD_TARIF,HWND_DESKTOP,tarifproc,0
 			invoke Shell_NotifyIcon,NIM_ADD,notes
 			jmp .processed
+		.elseif ax=IDM_LICENSE
+			invoke Shell_NotifyIcon,NIM_DELETE,notes
+			invoke DialogBoxParamA,[mhandle],IDD_LICENSE,HWND_DESKTOP,plicense,1
+			invoke Shell_NotifyIcon,NIM_ADD,notes
+			jmp .processed
 		.else
 			invoke DestroyWindow,[hwnd]
 		.endif
 		invoke Shell_NotifyIcon,NIM_DELETE,notes
+	.endif
+	.if [wparam]=BN_CLICKED shl 16 + IDCANCEL
+		invoke ShowWindow,[hwnd],SW_HIDE
+		invoke PostMessageA,[hwnd],WM_SIZE,SIZE_MINIMIZED,0
+		jmp .processed
 	.endif
 	cmp [wparam],BN_CLICKED shl 16 + ID_GET
 	je .get_info
@@ -574,11 +629,13 @@ proc main hwnd, msg, wparam, lparam
 	.endif
 	jmp .processed
     .wmclose:
-	invoke UnregisterHotKey,[hwnd],IDK_MTRAY
-	.if [idhkey]<>0
-		invoke UnregisterHotKey,[hwnd],[idhkey]
+	.if [hkey_flag]<>0
+		invoke UnregisterHotKey,[hwnd],IDK_MONEY
 	.endif
-	invoke	EndDialog,[hwnd],0
+	invoke DeleteObject,[font4]
+	invoke DeleteObject,[font5]
+	invoke DeleteObject,[font6]
+	invoke EndDialog,[hwnd],0
     .processed:
 	mov eax,1
     .finish:
@@ -593,34 +650,34 @@ proc main hwnd, msg, wparam, lparam
 		 jmp .processed
 	.elseif [wparam]=IDM_ABOUT
 		 invoke ShowWindow,[hwnd],SW_HIDE
-		 invoke UnregisterHotKey,[hwnd],IDK_MTRAY
 		 invoke DialogBoxParamA,[mhandle],IDD_ABOUT,HWND_DESKTOP,aboutproc,0
-		 invoke RegisterHotKey,[hwnd],IDK_MTRAY,0,VK_ESCAPE
+		 invoke ShowWindow,[hwnd],SW_SHOW
+		 jmp .processed
+	.elseif [wparam]=IDM_LICENSE
+		 invoke ShowWindow,[hwnd],SW_HIDE
+		 invoke DialogBoxParamA,[mhandle],IDD_LICENSE,HWND_DESKTOP,plicense,1
 		 invoke ShowWindow,[hwnd],SW_SHOW
 		 jmp .processed
 	.endif
 	xor eax,eax
 	jmp .finish
 .timer:
-	invokex getwinfullscr
-	.if eax=1
-		jmp .processed
+	.if [wparam]=TIMER_UPDATE
+		invokex getwinfullscr
+		.if eax=1
+			jmp .processed
+		.endif
+		mov [update_flag],1
+		invoke CreateThread,0,0,getversion,[hwnd],0,0
+	.elseif [wparam]=TIMER_CHECK
+		invoke CreateThread,0,0,check,[hwnd],0,0
 	.endif
-	mov [update_flag],1
-	invoke CreateThread,0,0,getversion,[hwnd],0,0
-	invoke MessageBeep
 	jmp .processed
 .hotkey:
 	mov eax,[wparam]
-	.if eax=[idhkey]
+	.if eax=IDK_MONEY
 		mov [flag],1
 		jmp .get_info
-	.elseif eax=IDK_MTRAY
-		invoke GetForegroundWindow
-		.if eax=[hwnd]
-			invoke ShowWindow,[hwnd],SW_HIDE
-			invoke PostMessageA,[hwnd],WM_SIZE,SIZE_MINIMIZED,0
-		.endif
 	.endif
 	jmp .processed
 .wmsize_tray:
@@ -655,7 +712,6 @@ proc main hwnd, msg, wparam, lparam
 .onoff:
 	invoke IsDlgButtonChecked,[hwnd],ID_ONOFF
 	.if eax=BST_CHECKED
-		mov [stop],0
 		invoke RegOpenKeyEx,key_root,subkey2,0,KEY_ALL_ACCESS,HKey
 		.if eax<>0
 			invokex DialogPOPUP,stat_err_reg,0
@@ -684,11 +740,11 @@ proc main hwnd, msg, wparam, lparam
 			invoke GetDlgItem,[hwnd],ID_SOUND
 			invoke EnableWindow,eax,1
 			.if [notify_flag]=1
-				invoke CreateThread,0,0,check,[hwnd],0,0
+				invoke SetTimer,[hwnd],TIMER_CHECK,TIME_CHECK,0
 			.endif
 		.endif
 	.else
-		mov [stop],1
+		invoke KillTimer,[hwnd],TIMER_CHECK
 		invoke RegOpenKeyExA,key_root,subkey2,0,KEY_ALL_ACCESS,HKey
 		.if eax<>0
 			invoke SendDlgItemMessage,[hwnd],ID_ONOFF,BM_SETCHECK,BST_UNCHECKED,0
@@ -786,9 +842,7 @@ proc main hwnd, msg, wparam, lparam
 	.if [tray_flag]=0
 		invoke ShowWindow,[hwnd],SW_HIDE
 	.endif
-	invoke UnregisterHotKey,[hwnd],IDK_MTRAY
 	invoke DialogBoxParamA,[mhandle],IDD_LOGIN,HWND_DESKTOP,getlogin,0
-	invoke RegisterHotKey,[hwnd],IDK_MTRAY,0,VK_ESCAPE
 	.if [tray_flag]=0
 		invoke ShowWindow,[hwnd],SW_SHOW
 	.endif
@@ -848,13 +902,13 @@ proc main hwnd, msg, wparam, lparam
 			invoke SendDlgItemMessage,[hwnd],ID_UPDATE,BM_SETCHECK,BST_UNCHECKED,0
 			jmp .processed
 		.endif
-		 invoke RegSetValueEx,[HKey],key_name4,0,REG_BINARY,flagg,1
+		invoke RegSetValueEx,[HKey],key_name4,0,REG_BINARY,flagg,1
 		.if eax<>0
 			invokex DialogPOPUP,stat_err_reg,0
 			invokex setstat,[hwnd],stat_err_reg
 			invoke SendDlgItemMessage,[hwnd],ID_UPDATE,BM_SETCHECK,BST_UNCHECKED,0
 		.else
-			invoke SetTimer,[hwnd],666,60*60*1000,0
+			invoke SetTimer,[hwnd],TIMER_UPDATE,TIME_UPDATE,0
 			invokex setstat,[hwnd],stat_ok
 		.endif
 	.else
@@ -871,10 +925,11 @@ proc main hwnd, msg, wparam, lparam
 			invokex setstat,[hwnd],stat_err_reg
 			invoke SendDlgItemMessage,[hwnd],ID_UPDATE,BM_SETCHECK,BST_CHECKED,0
 		.else
-			invoke KillTimer,[hwnd],666
+			invoke KillTimer,[hwnd],TIMER_UPDATE
 			invokex setstat,[hwnd],stat_ok
 		.endif
 	.endif
+	invoke RegCloseKey,[HKey]
 	jmp .processed
 .sethotkey:
 	invoke IsDlgButtonChecked,[hwnd],ID_HOTKEY
@@ -886,14 +941,13 @@ proc main hwnd, msg, wparam, lparam
 			invoke SendDlgItemMessage,[hwnd],ID_HOTKEY,BM_SETCHECK,BST_UNCHECKED,0
 			jmp .processed
 		.endif
-		 invoke RegSetValueEx,[HKey],key_name5,0,REG_BINARY,flagg,1
+		invoke RegSetValueEx,[HKey],key_name5,0,REG_BINARY,flagg,1
 		.if eax<>0
 			invokex DialogPOPUP,stat_err_reg,0
 			invokex setstat,[hwnd],stat_err_reg
 			invoke SendDlgItemMessage,[hwnd],ID_HOTKEY,BM_SETCHECK,BST_UNCHECKED,0
 		.else
-			mov [idhkey],1
-			invoke RegisterHotKey,[hwnd],1,MOD_ALT,4Dh
+			invoke RegisterHotKey,[hwnd],IDK_MONEY,MOD_ALT,4Dh
 			invokex setstat,[hwnd],stat_ok
 		.endif
 	.else
@@ -910,19 +964,19 @@ proc main hwnd, msg, wparam, lparam
 			invokex setstat,[hwnd],stat_err_reg
 			invoke SendDlgItemMessage,[hwnd],ID_HOTKEY,BM_SETCHECK,BST_CHECKED,0
 		.else
-			invoke UnregisterHotKey,[hwnd],[idhkey]
-			mov [idhkey],0
+			invoke UnregisterHotKey,[hwnd],IDK_MONEY
+			mov [hkey_flag],0
 			invokex setstat,[hwnd],stat_ok
 		.endif
 	.endif
+	invoke RegCloseKey,[HKey]
 	jmp .processed
 .notifys:
 	invoke IsDlgButtonChecked,[hwnd],ID_NOTIFY
 	.if eax=BST_CHECKED
 		invoke IsDlgButtonChecked,[hwnd],ID_ONOFF
 		.if eax=BST_CHECKED
-			mov [stop],0
-			invoke CreateThread,0,0,check,[hwnd],0,0
+			invoke SetTimer,[hwnd],TIMER_CHECK,TIME_CHECK,0
 		.endif
 		invoke RegOpenKeyEx,key_root,subkey2,0,KEY_ALL_ACCESS,HKey
 		.if eax<>0
@@ -952,7 +1006,7 @@ proc main hwnd, msg, wparam, lparam
 			.endif
 		.endif
 	.else
-		mov [stop],1
+		invoke KillTimer,[hwnd],TIMER_CHECK
 		invoke RegOpenKeyExA,key_root,subkey2,0,KEY_ALL_ACCESS,HKey
 		.if eax<>0
 			invoke SendDlgItemMessage,[hwnd],ID_NOTIFY,BM_SETCHECK,BST_CHECKED,0
@@ -1104,9 +1158,7 @@ proc WindowProc hwnd, msg, wparam, lparam
 		invoke ShellExecute,[hwnd],'open',site,0,0,SW_SHOW
 	.else
 		invoke ShowWindow,[Oldhwnd],SW_HIDE
-		invoke UnregisterHotKey,[Oldhwnd],IDK_MTRAY
 		invoke DialogBoxParamA,[mhandle],IDD_ABOUT,HWND_DESKTOP,aboutproc,0
-		invoke RegisterHotKey,[Oldhwnd],IDK_MTRAY,0,VK_ESCAPE
 		invoke ShowWindow,[Oldhwnd],SW_SHOW
 	.endif
 .finish:
@@ -1188,6 +1240,10 @@ include 'tariff.inc'
 display 'Компилим https_request.inc',13,10
 
 include 'https_request.inc'
+
+display 'Компилим license.inc',13,10
+
+include 'license.inc'
 
 .end start
 

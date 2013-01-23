@@ -10,22 +10,20 @@ proc aboutproc hwnd, msg, wparam, lparam
 	je .endwnd
 	cmp [msg],WM_LBUTTONDOWN
 	je .move
-	.if [msg]=WM_HOTKEY & [wparam]=IDK_BACK
-		invoke GetForegroundWindow
-		.if eax=[hwnd]
-			jmp .wmclose
-		.endif
-	.endif
+	cmp [msg],WM_COMMAND
+	je .wmcommand
 	xor eax,eax
 	jmp .finish
+  .wmcommand:
+	cmp [wparam],BN_CLICKED shl 16 + IDCANCEL
+	je .wmclose
+	jmp .processed
   .wminitdialog:
-	invoke RegisterHotKey,[hwnd],IDK_BACK,0,VK_ESCAPE
 	invokex sound,2
 	invoke SetWindowPos,[hwnd],HWND_TOPMOST,0,0,0,0,SWP_NOMOVE+SWP_NOSIZE
 	call .wminit
 	jmp .processed
   .wmclose:
-	invoke UnregisterHotKey,[hwnd],IDK_BACK
 	invokex sound,3
 	invoke EndDialog,[hwnd],0
 	ret

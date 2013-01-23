@@ -48,45 +48,27 @@ proc request buff,host,reqstring,useragent,method,post,buff_leng,ssl
 	test eax,eax
 	je .err_connect
 	mov [hpage],eax
+	mov eax,[leng]
+	mov dword [eax],4
+	invoke InternetQueryOptionA,[hpage],INTERNET_OPTION_SECURITY_FLAGS,[flags],[leng]
+	test eax,eax
+	je .err_connect
+	mov eax,[flags]
+	add dword [eax],SECURITY_FLAG_IGNORE_UNKNOWN_CA or SECURITY_FLAG_IGNORE_REVOCATION
+	invoke InternetSetOptionA,[hpage],INTERNET_OPTION_SECURITY_FLAGS,eax,4
 	invoke lstrlenA,.content_type
 	mov esi,eax
 	mov eax,[method]
 	.if dword [eax]<>'GET'
-		invoke lstrlenA,[post]
-		mov ecx,[post]
+			invoke lstrlenA,[post]
+			mov ecx,[post]
 	.else
-		mov eax,0
-		mov ecx,0
+			xor eax,eax
+			xor ecx,ecx
 	.endif
 	invoke HttpSendRequestA,[hpage],.content_type,esi,ecx,eax
-	.if eax=0
-		invoke GetLastError
-		.if eax=ERROR_INTERNET_INVALID_CA
-			mov eax,[leng]
-			mov dword [eax],4
-			invoke InternetQueryOptionA,[hpage],INTERNET_OPTION_SECURITY_FLAGS,[flags],[leng]
-			test eax,eax
-			je .err_connect
-			mov eax,[flags]
-			add dword [eax],SECURITY_FLAG_IGNORE_UNKNOWN_CA or SECURITY_FLAG_IGNORE_REVOCATION
-			invoke InternetSetOptionA,[hpage],INTERNET_OPTION_SECURITY_FLAGS,eax,4
-			invoke lstrlenA,.content_type
-			mov esi,eax
-			mov eax,[method]
-			.if dword [eax]<>'GET'
-				invoke lstrlenA,[post]
-				mov ecx,[post]
-			.else
-				mov eax,0
-				mov ecx,0
-			.endif
-			invoke HttpSendRequestA,[hpage],.content_type,esi,ecx,eax
-			test eax,eax
-			je .err_connect
-		.else
-			jmp .err_connect
-		.endif
-	.endif
+	test eax,eax
+	je .err_connect
 	mov edi,[buff]
 	mov [readed],0
       .read:
@@ -111,7 +93,7 @@ proc request buff,host,reqstring,useragent,method,post,buff_leng,ssl
 	mov eax,esi
 	ret
  .err_connect:
-	mov esi,0
+	xor esi,esi
 	jmp .disconnect
 .content_type db 'Content-Type: application/x-www-form-urlencoded',0
 endp

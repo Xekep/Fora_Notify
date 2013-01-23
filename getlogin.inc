@@ -8,15 +8,13 @@ proc getlogin hwnd, msg, wparam, lparam
 	je .move
 	cmp [msg],WM_CLOSE
 	je .exit
-	.if [msg]=WM_HOTKEY & [wparam]=IDK_BACK
-		invoke GetForegroundWindow
-		.if eax=[hwnd]
-			jmp .exit
-		.endif
-	.endif
+	cmp [msg],WM_COMMAND
+	je .wmcommand
 	xor eax,eax
 	jmp .finish
      .wmcommand:
+	cmp [wparam],BN_CLICKED shl 16 + IDCANCEL
+	je .exit
 	cmp [wparam],BN_CLICKED shl 16 + ID_SAVE
 	je .save
 	jmp .processed
@@ -26,7 +24,6 @@ proc getlogin hwnd, msg, wparam, lparam
 	pop edi esi ebx
 	ret
      .wminitdialog:
-	invoke RegisterHotKey,[hwnd],IDK_BACK,0,VK_ESCAPE
 	invoke SetWindowPos,[hwnd],HWND_TOPMOST,0,0,0,0,SWP_NOMOVE+SWP_NOSIZE
 	invoke LoadIcon,[mhandle],ID_ICON
 	invoke SendMessageA,[hwnd],WM_SETICON,ICON_BIG,eax
@@ -102,7 +99,6 @@ proc getlogin hwnd, msg, wparam, lparam
 	invoke GlobalFree,[buff_login]
 	invoke GlobalFree,[buff_pass]
      .exit:
-	invoke UnregisterHotKey,[hwnd],IDK_BACK
 	invoke RegCloseKey,[HKey]
 	invoke EndDialog,[hwnd],0
 	ret

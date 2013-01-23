@@ -1,11 +1,5 @@
 proc check hwnd
 	call set_seh
-     .start:
-	invoke Sleep,10*60*1000
-	.if [stop]=1
-		mov [stop],0
-		invoke ExitThread,0
-	.endif
      .metka:
 	invoke WaitForSingleObject,[death],0
 	.if eax=WAIT_TIMEOUT
@@ -20,7 +14,7 @@ proc check hwnd
 	invoke RegOpenKeyExA,key_root,subkey2,0,KEY_QUERY_VALUE,HKey
 	.if eax<>0
 		invokex DialogPOPUP,err_acc,0
-		jmp .start
+		jmp .exit
 	.endif
 	invoke GlobalAlloc,GPTR,64
 	mov [buff_login],eax
@@ -29,7 +23,7 @@ proc check hwnd
 		invoke RegCloseKey,[HKey]
 		invokex DialogPOPUP,err_acc,0
 		invoke GlobalFree,[buff_login]
-		jmp .start
+		jmp .exit
 	.endif
 	mov ecx,[vsize]
 	mov eax,[buff_login]
@@ -46,7 +40,7 @@ proc check hwnd
 		invokex DialogPOPUP,err_acc,0
 		invoke GlobalFree,[buff_pass]
 		invoke GlobalFree,[buff_login]
-		jmp .start
+		jmp .exit
 	.endif
 	mov ecx,[vsize]
 	dec eax
@@ -67,5 +61,6 @@ proc check hwnd
 	mov [flag2],1
 	invoke CreateThread,0,0,get_content,[hwnd],0,0
 	mov [death],eax
-	jmp .start
+     .exit:
+	invoke ExitThread,0
 endp

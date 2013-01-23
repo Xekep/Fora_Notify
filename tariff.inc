@@ -22,9 +22,13 @@ proc tarifproc hwnd, msg, wparam, lparam
    .wminitdialog:
 	call set_seh
 	mov [tprogress],0
+	mov [cur],0
+	mov [tselect],0
+	mov [press],0
 	invoke CreateWindowExA,0,'STATIC',site+7,SS_LEFT + SS_NOTIFY + WS_CHILD + WS_GROUP + WS_VISIBLE,100,100,90,14,[hwnd],0,0,0
 	push eax
 	invoke CreateFontW,14,0,0,0,0,0,0,0,ANSI_CHARSET or DEFAULT_CHARSET,0,0,ANTIALIASED_QUALITY,DEFAULT_PITCH or FF_DONTCARE,"Arial"
+	mov [font3],eax
 	mov ecx,dword [esp]
 	invoke SendMessage,ecx,WM_SETFONT,eax,TRUE
 	pop eax
@@ -62,7 +66,7 @@ proc tarifproc hwnd, msg, wparam, lparam
 	add ecx,100
 	.if eax=ecx
 		invoke SetBkMode,[wparam],TRANSPARENT
-		invoke SetTextColor,[wparam],255,0,0;0FF0000h
+		invoke SetTextColor,[wparam],255
 	.endif
 	xor eax,eax
 	mov ecx,[lparam]
@@ -97,6 +101,9 @@ proc tarifproc hwnd, msg, wparam, lparam
 	jmp .processed
     .exit:
 	invoke GlobalFree,[tarifi]
+	invoke DeleteObject,[font1]
+	invoke DeleteObject,[font2]
+	invoke DeleteObject,[font3]
     .wmclose:
 	invoke EndDialog,[hwnd],0
 	ret
@@ -116,6 +123,10 @@ proc tarifproc hwnd, msg, wparam, lparam
      .timer:
 	.if [wparam]=666 & [tprogress]=100
 		invoke KillTimer,[hwnd],666
+		invoke CreateFontW,16,0,0,0,0,0,0,0,ANSI_CHARSET or DEFAULT_CHARSET,0,0,ANTIALIASED_QUALITY,DEFAULT_PITCH or FF_DONTCARE,"Arial"
+		mov [font1],eax
+		invoke CreateFontW,16,0,0,0,800,0,0,0,ANSI_CHARSET or DEFAULT_CHARSET,0,0,ANTIALIASED_QUALITY,DEFAULT_PITCH or FF_DONTCARE,"Arial"
+		mov [font2],eax
 		invoke GlobalAlloc,GPTR,100
 		mov [tmem],eax
 		mov ecx,[count]
@@ -160,7 +171,7 @@ proc tarifproc hwnd, msg, wparam, lparam
 		pop esi
 		push esi
 		push eax
-		invokex .createwin,[hwnd],eax,[tmem],16,esi,375,30
+		invokex .createwin,[hwnd],eax,[font1],[tmem],16,esi,375,30
 		mov eax,[tmem]
 		mov byte [eax],0
 		pop eax
@@ -180,16 +191,12 @@ proc tarifproc hwnd, msg, wparam, lparam
 		add eax,100
 		push eax
 		invoke SendDlgItemMessage,[hwnd],eax,BM_CLICK,0,0
-		invoke CreateFontW,16,0,0,0,800,0,0,0,ANSI_CHARSET or DEFAULT_CHARSET,0,0,ANTIALIASED_QUALITY,DEFAULT_PITCH or FF_DONTCARE,"Arial"
-		pop ecx
-		invoke SendDlgItemMessage,[hwnd],ecx,WM_SETFONT,eax,TRUE
+		pop eax
+		invoke SendDlgItemMessage,[hwnd],eax,WM_SETFONT,[font2],TRUE
 		.if [tselect]<>0
 			mov eax,[tselect]
 			add eax,100
-			push eax
-			invoke CreateFontW,16,0,0,0,800,0,0,0,ANSI_CHARSET or DEFAULT_CHARSET,0,0,ANTIALIASED_QUALITY,DEFAULT_PITCH or FF_DONTCARE,"Arial"
-			pop ecx
-			invoke SendDlgItemMessage,[hwnd],ecx,WM_SETFONT,eax,TRUE
+			invoke SendDlgItemMessage,[hwnd],eax,WM_SETFONT,[font2],TRUE
 		.endif
 	.elseif [tprogress]=-1
 		jmp .wmclose
@@ -322,27 +329,16 @@ proc .process hwnd
 	.endif
 endp
 
-proc .createwin hwnd, id, text, x, y, w, h
+proc .createwin hwnd, id,font, text, x, y, w, h
 	invoke CreateWindowExA,0,'BUTTON',[text],BS_CENTER + WS_CHILD + WS_VISIBLE + WS_TABSTOP + BS_FLAT + BS_AUTORADIOBUTTON,[x],[y],[w],[h],[hwnd],0,0,0
 	push eax
-	invoke CreateFontW,16,0,0,0,0,0,0,0,ANSI_CHARSET or DEFAULT_CHARSET,0,0,ANTIALIASED_QUALITY,DEFAULT_PITCH or FF_DONTCARE,"Arial"
-	mov ecx,dword [esp]
-	invoke SendMessage,ecx,WM_SETFONT,eax,TRUE
+	invoke SendMessage,eax,WM_SETFONT,[font],TRUE
 	pop eax
 	invoke SetWindowLongA,eax,GWL_ID,[id],0
 	ret
 endp
 
-;ttaarifi db 'WEEEE',0,'web 512',0,'600',0,0,'WEEEE',0,'web 1024',0,'700',0,0,'WEEEE',0,'web 2048',0,'800',0,0,'WEEEE',0,'web 4048',0,'900',0,0,'WEEEE',0,'web 5048',0,'1800',0,0,'WEEEE',0,'web 6048',0,'1100',0,0,0,0;;;;;;;;;;;;;;;;;;;
-
 proc get_tarif hwnd
-	;mov [tarifi],ttaarifi  ;;;;;;;;;;;;;;;
-	;add [tprogress],40  ;;;;;
-	;invoke Sleep,300   ;;;;
-	;add [tprogress],60    ;;;;;;;;;;;;;;;;;;;
-	;mov [cur],2;;;;;;;;;;;
-	;mov [count],6    ;;;;;
-	;invoke ExitThread,0  ;;;;;
 	call set_seh
 	local buff_login:DWORD
 	local buff_pass:DWORD
@@ -403,29 +399,14 @@ proc get_tarif hwnd
 	loop .metka2
 	invoke RegCloseKey,[HKey]
 	invoke GlobalAlloc,GPTR,MAX_FILE_SIZE
-	test eax,eax
-	je .err_mem
-	mov [buff],eax
-	invoke GlobalAlloc,GPTR,MAX_FILE_SIZE
 	.if eax=0
-		invoke GlobalFree,[buff]
 		jmp .err_mem
 	.endif
 	mov [post],eax
-	invokex request,[buff],thost,'/session/new',tuseragent,'GET',0,MAX_FILE_SIZE,1
-	.if eax=0
-		jmp .err_connect
-	.endif
-	add [tprogress],10
-	invokex ConcatStrings,[post],5,'password=',[buff_pass],'&login=',[buff_login],ttoken_name
+	invokex ConcatStrings,[post],4,'password=',[buff_pass],'&login=',[buff_login]
 	add eax,esi
-	invokex preg_match,tpreg_token,[buff],eax,1,100,0
-	.if eax=0
-		jmp .err_connect
-	.endif
 	invoke GlobalFree,[buff_pass]
 	invoke GlobalFree,[buff_login]
-	invoke GlobalFree,[buff]
 	invoke GlobalAlloc,GPTR,MAX_FILE_SIZE
 	test eax,eax
 	je .err_mem
@@ -434,6 +415,7 @@ proc get_tarif hwnd
 	.if eax=0
 		jmp .err_connect
 	.endif
+	add [tprogress],10
 	invoke GlobalAlloc,GPTR,MAX_FILE_SIZE*2
 	mov [mem],eax
 	invoke GlobalAlloc,GPTR,MAX_FILE_SIZE*2
@@ -613,7 +595,6 @@ proc get_tarif hwnd
 	mov [tprogress],-1
 	jmp .exit
 
-;.token2 db "authenticity_token'); s.setAttribute('value', '*'",0
 .message_hello db 'Добро пожаловать!',0
 .preg_tarif db 'name="tariff_code" type="radio" value="*" /></td>'
 	    db 13,10,'            <td style="border-left:none;">'
@@ -697,19 +678,19 @@ proc save_tarif hwnd
 	inc eax
 	loop .metka67
 	invoke RegCloseKey,[HKey]
-	invoke GlobalAlloc,GPTR,MAX_FILE_SIZE
+	invoke GlobalAlloc,GPTR,MAX_FILE_SIZE;
 	test eax,eax
 	je .err_mem
-	mov [buff],eax
+	mov [buff],eax;
 	invoke GlobalAlloc,GPTR,MAX_FILE_SIZE
 	.if eax=0
-		invoke GlobalFree,[buff]
+		invoke GlobalFree,[buff];
 		invoke GlobalFree,dword [buff_pass]
 		invoke GlobalFree,dword [buff_login]
 		jmp .err_mem
 	.endif
 	mov [post],eax
-	invokex request,[buff],thost,'/session/new',tuseragent,'GET',0,MAX_FILE_SIZE,1
+	invokex request,[buff],thost,'/session/new',tuseragent,'GET',0,MAX_FILE_SIZE,1;
 	.if eax=0
 		invoke GlobalFree,dword [buff_pass]
 		invoke GlobalFree,dword [buff_login]
@@ -720,9 +701,9 @@ proc save_tarif hwnd
 		invoke GlobalFree,[buff_pass]
 		invoke GlobalFree,[buff_login]
 		jmp .err_connect
-	.endif
-	invokex ConcatStrings,[post],6,'password=',[buff_pass],'&login=',[buff_login],ttoken_name,[token]
-	invoke GlobalFree,[buff]
+	.endif;
+	invokex ConcatStrings,[post],6,'password=',[buff_pass],'&login=',[buff_login],ttoken_name,[token];4
+	invoke GlobalFree,[buff];
 	invoke GlobalAlloc,GPTR,MAX_FILE_SIZE
 	test eax,eax
 	je .err_mem
@@ -782,29 +763,26 @@ proc save_tarif hwnd
 	invoke MultiByteToWideChar,CP_UTF8,0,[buff],-1,[mem],MAX_FILE_SIZE*2
 	invoke WideCharToMultiByte,1251,0,[mem],-1,[mem2],MAX_FILE_SIZE*2,0,0
 	invoke GlobalFree,[mem]
-	invokex preg_match,tpreg_message2,[mem2],'Выбранный тарифный',0,0,-1
+	invokex preg_match,tpreg_message2,[mem2],'Выбранный тарифный ',0,0,-1
 	.if eax=1
 		invokex DialogPOPUP,'Тариф успешно изменён!',1
-		.if [tselect]<>0
-			invoke CreateFontW,16,0,0,0,0,0,0,0,ANSI_CHARSET or DEFAULT_CHARSET,0,0,ANTIALIASED_QUALITY,DEFAULT_PITCH or FF_DONTCARE,"Arial"
-			mov ecx,[tselect]
-			add ecx,100
-			invoke SendDlgItemMessage,[hwnd],ecx,WM_SETFONT,eax,TRUE
-		.endif
+		mov eax,[tselect]
+		push eax
 		mov eax,[press]
-		sub eax,100
 		mov [tselect],eax
-		invoke CreateFontW,16,0,0,0,800,0,0,0,ANSI_CHARSET or DEFAULT_CHARSET,0,0,ANTIALIASED_QUALITY,DEFAULT_PITCH or FF_DONTCARE,"Arial"
-		mov ecx,[tselect]
-		add ecx,100
-		invoke SendDlgItemMessage,[hwnd],ecx,WM_SETFONT,eax,TRUE
+		sub [tselect],100
+		invoke SendDlgItemMessage,[hwnd],eax,WM_SETFONT,[font2],TRUE
+		pop eax
+		.if eax<>0
+			add eax,100
+			invoke SendDlgItemMessage,[hwnd],eax,WM_SETFONT,[font1],TRUE
+		.endif
 	.else
 		invoke GetDlgItem,[hwnd],ID_TSAVE
 		invoke EnableWindow,eax,1
 		invokex preg_match,tpreg_message,[mem2],[post],1,100,-1
 		.if eax<>0
 			invokex DialogPOPUP,[post],1
-			invoke Sleep,100
 		.else
 			invokex DialogPOPUP,'Неизвестная ошибка!',1
 		.endif
@@ -848,7 +826,7 @@ thost db 'stat.fora.su',0
 ttoken_name db '&authenticity_token=',0
 tpreg_token db 'authenticity_token" type="hidden" value="*"',0
 tpreg_message db '<span class="message">*</span>',0
-tpreg_message2 db '<span class="message">* план будет назначен автоматически',0
+tpreg_message2 db '<span class="message">*план будет назначен автоматически',0
 
 proc tWindowProc hwnd, msg, wparam, lparam
 	cmp [msg],WM_SETCURSOR	    ; Курсор над ссылкой

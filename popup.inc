@@ -4,14 +4,21 @@ proc DialogPOPUP arg1, arg2
 		ret
 	.endif
 	.if [notify_flag]=1 | dword [arg2]=1
-		invoke CreateThread,0,0,.metka1,[arg1],0,0
+		invoke lstrlenA,[arg1]
+		inc eax
+		invoke GlobalAlloc,GPTR,eax
+		push eax
+		invoke lstrcpyA,eax,[arg1]
+		pop eax
+		invoke CreateThread,0,0,.metka1,eax,0,0
 	.endif
 	ret
 endp
 proc .metka1 arg1
 	call set_seh
-	invoke	DialogBoxParam,[mhandle],IDD_POPUP,HWND_DESKTOP,POPUP,[arg1]
-	invoke	ExitThread,0
+	invoke DialogBoxParam,[mhandle],IDD_POPUP,HWND_DESKTOP,POPUP,[arg1]
+	invoke GlobalFree,[arg1]
+	invoke ExitThread,0
 endp
 
 proc POPUP hwnddlg,msg,wparam,lparam
@@ -24,6 +31,8 @@ proc POPUP hwnddlg,msg,wparam,lparam
 	cmp	[msg],WM_TIMER
 	je	.wmclose
 	cmp	[msg],WM_LBUTTONDOWN
+	je	.popdown_window
+	cmp	[msg],WM_RBUTTONDOWN
 	je	.popdown_window
 	xor	eax,eax
 	jmp	.finish
@@ -125,9 +134,9 @@ proc POPUP hwnddlg,msg,wparam,lparam
 	loop	@b
 	.if [flag_sec]=1
 		invoke InterlockedDecrement,flag_sec
-		mov eax,20000
+		mov eax,TIME_POPUP2
 	.else
-		mov eax,2000
+		mov eax,TIME_POPUP
 	.endif
 	; Установить таймер закрытия окна на 2 секунды
 	invoke	SetTimer,[hwnddlg],TIMER_ID,eax,NULL
@@ -139,7 +148,6 @@ proc POPUP hwnddlg,msg,wparam,lparam
 	; Это наш таймер?
 	cmp	[wparam],TIMER_ID
 	jne	.processed
-
 .popdown_window:
 	; Высота окна
 	mov	ecx,[coord.bottom]
@@ -172,7 +180,7 @@ proc POPUP hwnddlg,msg,wparam,lparam
 
 	; Закрыть диалоговое окно
 	invoke	EndDialog,[hwnddlg],0
-	invoke	ExitThread,0
+	ret
 .processed:
 	mov	eax,1
 .finish:
