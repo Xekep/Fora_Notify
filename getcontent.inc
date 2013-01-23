@@ -50,6 +50,7 @@ proc get_content hwnd,pty
 		inc eax
 		ret
 	.endif
+	mov byte [eax],'F'
 	mov [vsize],64
 	invoke GlobalAlloc,GPTR,64
 	mov [buff_pass],eax
@@ -95,11 +96,18 @@ proc get_content hwnd,pty
 	invoke htons,7777
 	mov [sin.sin_port],ax
 	mov [sin.sin_family],AF_INET
+	cmp [cache_ip1],0
+	je .cip1
+	mov eax,[cache_ip1]
+	jmp .cip2
+	.cip1:
 	invoke gethostbyname,host
 	test eax,eax
 	je .err_connect_ip
 	mov eax,[eax+12]	 ;h_addr_list список указателей на IP
 	mov eax,[eax+8] 	   ;берём первый IP
+	mov [cache_ip1],eax
+	.cip2:
 	mov [sin.sin_addr],eax
 	lea eax,[sin]
 	invoke connect,[hsock],eax,sizeof.sockaddr_in
@@ -274,6 +282,7 @@ proc get_content hwnd,pty
 	stdcall setstat,[hwnd],err_connect2
 	jmp .disconnect
  .err_connect:
+	mov [cache_ip1],0
 	stdcall DialogPOPUP,err_connect3,0
 	stdcall setstat,[hwnd],err_connect3
 	jmp .disconnect

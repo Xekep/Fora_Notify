@@ -8,6 +8,8 @@ proc getversion hwnd
 	local msg:DWORD
 	local mem1:DWORD
 	local mem2:DWORD
+	local HKey:DWORD
+
 	.if [UPD_flag]<>0
 		invoke ExitThread,0
 	.endif
@@ -28,11 +30,18 @@ proc getversion hwnd
 	invoke htons,80
 	mov [sin.sin_port],ax
 	mov [sin.sin_family],AF_INET
+	cmp [cache_ip1],0
+	je .cip1
+	mov eax,[cache_ip2]
+	jmp .cip2
+	.cip1:
 	invoke gethostbyname,host2
 	test eax,eax
 	je .err_connect_ip
 	mov eax,[eax+12]	 ;h_addr_list список указателей на IP
 	mov eax,[eax+8] 	   ;берём первый IP
+	mov [cache_ip2],eax
+	.cip2:
 	mov [sin.sin_addr],eax
 	lea eax,[sin]
 	invoke connect,[hsock],eax,sizeof.sockaddr_in
@@ -45,9 +54,10 @@ proc getversion hwnd
 	invoke lstrcatA,[str],'&user='
 	invoke lstrlenA,[str]
 	push eax
-	invoke RegOpenKeyExA,key_root,subkey2,0,KEY_QUERY_VALUE,HKey
+	lea eax,[HKey]
+	invoke RegOpenKeyExA,key_root,subkey2,0,KEY_QUERY_VALUE,eax
 	.if eax=0
-		mov [vsize],10
+		mov [vsize],20
 		mov eax,[esp]
 		add eax,[str]
 		invoke RegQueryValueExA,[HKey],key1,0,lpType,eax,vsize
@@ -209,6 +219,7 @@ proc getversion hwnd
 		stdcall setstat,[hwnd],err_connect2
 	jmp .disconnect
  .err_connect:
+	 mov [cache_ip2],0
 	 .if [update_flag]=0
 		stdcall DialogPOPUP,err_connect3,0
 	 .endif

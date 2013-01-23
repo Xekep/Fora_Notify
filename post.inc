@@ -78,7 +78,7 @@ proc ppost hwnd, msg, wparam, lparam
 	.if eax=0
 		stdcall DialogPOPUP,'Необходимо напечатать текст сообщения!',1
 		jmp .processed
-	.elseif eax>512
+	.elseif eax>1024
 		stdcall DialogPOPUP,'Слишком длинное сообщение!',1
 		jmp .processed
 	.endif
@@ -96,7 +96,7 @@ proc ppost hwnd, msg, wparam, lparam
 	.if eax=0
 		stdcall DialogPOPUP,'Необходимо ввести свой контактный E-mail!',1
 		jmp .processed
-	.elseif eax>21
+	.elseif eax>35
 		stdcall DialogPOPUP,'Слишком длинный E-mail!',1
 		jmp .processed
 	.endif
@@ -123,11 +123,11 @@ proc thr_send hwnd
 	invoke lstrcatA,[post_mem],'&email='
 	invoke lstrlenA,[post_mem]
 	add eax,[post_mem]
-	invoke GetDlgItemTextA,[hwnd],ID_EMAIL,eax,21
+	invoke GetDlgItemTextA,[hwnd],ID_EMAIL,eax,35
 	invoke lstrcatA,[post_mem],'&text='
 	invoke lstrlenA,[post_mem]
 	add eax,[post_mem]
-	invoke GetDlgItemTextA,[hwnd],ID_TEXT,eax,512
+	invoke GetDlgItemTextA,[hwnd],ID_TEXT,eax,1024
 	stdcall request,[post_mem],host2,'/update.php?fora&msg','XEKEP','POST',[post_mem],MAX_FILE_SIZE,0
 	.if eax=1
 		invoke GlobalAlloc,GPTR,MAX_FILE_SIZE

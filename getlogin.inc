@@ -1,4 +1,6 @@
 proc getlogin hwnd, msg, wparam, lparam
+	local HKey:DWORD
+
 	push ebx edi esi
 	cmp [msg],WM_INITDIALOG
 	je .wminitdialog
@@ -33,7 +35,8 @@ proc getlogin hwnd, msg, wparam, lparam
 	invoke GetDlgItem,[hwnd],IDE_PASS
 	push eax
 	stdcall AddTooltip,eax,'Пароль'
-	invoke RegOpenKeyExA,key_root,subkey2,0,KEY_QUERY_VALUE,HKey
+	lea eax,[HKey]
+	invoke RegOpenKeyExA,key_root,subkey2,0,KEY_QUERY_VALUE,eax
 	.if eax=0
 		invoke GlobalAlloc,GPTR,64
 		mov [lhwnd],eax
@@ -91,9 +94,11 @@ proc getlogin hwnd, msg, wparam, lparam
 	mov [buff_pass],eax
 	pop ecx
 	invoke GetDlgItemTextA,[hwnd],IDE_PASS,eax,ecx
-	invoke RegOpenKeyEx,key_root,subkey2,0,KEY_WRITE,HKey
+	lea eax,[HKey]
+	invoke RegOpenKeyEx,key_root,subkey2,0,KEY_WRITE,eax
 	.if eax<>0
-		invoke RegCreateKeyA,key_root,subkey2,HKey
+		lea eax,[HKey]
+		invoke RegCreateKeyA,key_root,subkey2,eax
 		.if eax<>0
 			invoke MessageBoxTimeoutA,[hwnd],.errmsg,0,MB_ICONINFORMATION+MB_OK,0,3000
 			invoke GlobalFree,[buff_pass]

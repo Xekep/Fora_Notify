@@ -1,4 +1,6 @@
-;PARSER by Xekep
+; PARSER by Xekep
+;
+; „еловек, окстись прежде чем мен€ть что-либо здесь!
 proc preg_match mat, str, str2, mode, leng, sym
 	local mem:DWORD
 	local start1:DWORD

@@ -489,6 +489,10 @@ proc get_tarif hwnd
 	invoke GlobalFree,[mem]
 	stdcall preg_match,.preg_tarif,[buff],[post],2,MAX_FILE_SIZE,0
 	.if eax=0
+		stdcall preg_match,'<td colspan=2 class="propname">*</td>',[buff],[post],1,MAX_FILE_SIZE,0
+		.if eax<>0
+			invoke MessageBoxA,[hwnd],[post],0,MB_ICONERROR+MB_OK
+		.endif
 		invoke GlobalFree,[curtarif]
 		jmp .err_connect
 	.endif
@@ -840,28 +844,24 @@ endp
 proc days b, money, memory
 	local perem:DWORD
 	invoke GetSystemTime,p
-	xor eax,eax
-	mov ax,word [p.wMonth]
+	movsx eax,word [p.wMonth]
 	dec ax
 	mov al,byte [eax+day]
 	cmp al,-1
 	jne .bis_sextus
 	;Год является, високосным если он кратен 4 и при этом не кратен 100, либо кратен 400
 	xor edx,edx
-	xor eax,eax
-	mov ax,word [p.wYear]
+	movsx eax,word [p.wYear]
 	mov edi,4
 	div edi
 	.if edx=0
 		xor edx,edx
-		xor eax,eax
-		mov ax,word [p.wYear]
+		movsx eax,word [p.wYear]
 		mov edi,100
 		div edi
 		.if edx=0
 			xor edx,edx
-			xor eax,eax
-			mov ax,word [p.wYear]
+			movsx eax,word [p.wYear]
 			mov edi,400
 			div edi
 			.if edx=0

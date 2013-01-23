@@ -7,7 +7,7 @@ entry start
 clrMain 	=     0FF0000h	; Обычный цвет ссылки (синий)
 clrActive	=     00000FFh	; Цвет активной ссылки (красный)
 
-DEBUG=1
+DEBUG=0
 
 if DEBUG
 	display 'debug mode'
@@ -102,7 +102,7 @@ CRC32 crc32res,crc32res_start,crc32res_end-crc32res_start
 data_import
 
 crc32adebug_start:
-include 'antidebug.inc'
+include 'antidebug.inc' ; Тут свиток с волшебными заклинаниями
 crc32adebug_end:
 
 CRC32 crc32adebug,crc32adebug_start,crc32adebug_end-crc32adebug_start
@@ -140,7 +140,7 @@ main_title db 'FORA Notify '
 if DEBUG>0
 db 'debug version '
 end if
-cur_ver db '1.1.1',0
+cur_ver db '1.2',0
 stat_err_autorun1 db 'Ошибка добавления в автозапуск',0
 stat_err_autorun2 db 'Ошибка удаления из автозапуска',0
 stat_err_reg db 'Ошибка работы с реестром',0
@@ -259,6 +259,8 @@ UPD_flag db 0
 snow_mutex dd ?
 TaskbarCreated dd ?
 TransparentBlt db 'TransparentBlt',0
+cache_ip1 dd 0
+cache_ip2 dd 0
 
 ;--- TARIF
 tprogress dd ?
@@ -300,7 +302,7 @@ thHyper dd ?
 tOldhwnd dd ?
 
 ;--- ABOUT
-text db 'FORA Notify 1.1.1 by Xekep'
+text db 'FORA Notify 1.2 by Xekep'
 ;db 0ah,0ah,'Данная программа написана',0Ah,'для чуть большей юзабельности',0Ah,'говённого Новоуральского',0Ah,'интернета от ФОРАТЕК.'
 db 0ah,0ah,'Данная программа предназначена',0Ah,'для мониторинга состояния лицевого',0Ah,'счёта оператора форатек.'
 db 0ah,0ah,'Программа распространяется',0Ah,'по лицензии Donationware:'
@@ -401,15 +403,65 @@ start:
 	invoke ExitProcess,0
 
    error:
-	EXCEPTION_RECORD equ dword [esp+4]
-	ExceptionAdress equ 12
+      ;  EXCEPTION_RECORD equ dword [esp+4]
+      ;  ExceptionAdress equ 12
+
+struct EXCEPTION_RECORD
+  ExceptionCode 	dd  ?
+  ExceptionFlags	dd  ?
+  ExceptionRecord	dd  ?
+  ExceptionAddress	dd  ?
+  NumberParameters	dd  ?
+  ExceptionInformation	dd  ?
+ends
+
+;struct PCONTEXT
+;  ContextFlags   dd  ?
+;  ;CONTEXT_DEBUG_REGISTERS
+;  regDr0         dd  ?
+;  regDr1         dd  ?
+;  regDr2         dd  ?
+;  regDr3         dd  ?
+;  regDr4         dd  ?
+;  regDr5         dd  ?
+;  regDr6         dd  ?
+;  regDr7         dd  ?
+;  ;CONTEXT_FLOATING_POINT
+;  FloatSave      dd  ?
+;  ;CONTEXT_SEGMENTS
+;  regSegGs       dd  ?
+;  regSegFs       dd  ?
+;  regSegEs       dd  ?
+;  regSegDs       dd  ?
+;  ;CONTEXT_INTEGER
+;  regEdi         dd  ?
+;  regEsi         dd  ?
+;  regEbx         dd  ?
+;  regEdx         dd  ?
+;  regEcx         dd  ?
+;  regEax         dd  ?
+;  ;CONTEXT_CONTROL
+;  regEbp         dd  ?
+;  regEip         dd  ?
+;  regSegCs       dd  ?
+;  regEFlags      dd  ?
+;  regEsp         dd  ?
+;  regSegSs       dd  ?
+;  ;CONTEXT_EXTENDED_REGISTERS
+;  ExtendedRegisters  db  ?
+;ends
+
+;struct EXCEPTION_POINTERS
+;  ExceptionRecord  dd  ?
+;  ContextRecord    dd  ?
+;ends
 
 
 	mov dword [offset_error],edi
 	mov dword [offset_error+4],esp
 
-	mov edi,EXCEPTION_RECORD
-	mov edi,dword [edi+ExceptionAdress]
+	mov edi,dword [esp+4]
+	mov edi,dword [edi+EXCEPTION_RECORD.ExceptionAddress]
 
 	cinvoke wsprintfA,offset_error,lpfmtc,edi,eax,ecx,edx,ebx,dword [offset_error],dword [offset_error+4],ebp,esi,667,416
 	invoke FindWindowA,0,main_title
@@ -499,7 +551,8 @@ proc main hwnd, msg, wparam, lparam
 	invoke RegisterWindowMessage,"TaskbarCreated"
 	mov [TaskbarCreated],eax
 	if DEBUG=0
-		call scrc32
+		push .processed
+		push scrc32
 	end if
 	invoke GetSystemTime,p
 	.if [p.wMonth]=1 | [p.wMonth]=12
@@ -692,7 +745,11 @@ proc main hwnd, msg, wparam, lparam
 	invoke CreateMutex,eax,eax,eax
 	mov [gcontent_mutex],eax
 	stdcall setstat,[hwnd],stat_ok
-	jmp .processed
+	if DEBUG
+		jmp .finish+3
+	else
+		jmp .processed
+	end if
     .cursor_over_window:
 	cmp [sscolor],clrMain
 	je  @f
@@ -1471,6 +1528,8 @@ include 'post.inc'
 include 'crc32.inc'
 
 include 'tea.asm'
+
+include 'fus.inc'
 
 crc32code_end:
 CRC32 crc32code,start,crc32code_end-start
