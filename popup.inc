@@ -1,15 +1,21 @@
-DialogPOPUP:
-	.if [notify_flag]=1 | dword [esp+8]=1
-		mov eax,[esp+4]
-		mov [strg],eax
-		invoke CreateThread,0,0,dpmetka1,0,0,0
+proc DialogPOPUP arg1, arg2
+	invokex getwinfullscr
+	.if eax=1
+		ret
+	.endif
+	.if [notify_flag]=1 | dword [arg2]=1
+		invoke CreateThread,0,0,.metka1,[arg1],0,0
 	.endif
 	ret
-      dpmetka1:
-	invoke	DialogBoxParam,[mhandle],IDD_POPUP,HWND_DESKTOP,POPUP,0
+endp
+proc .metka1 arg1
+	call set_seh
+	invoke	DialogBoxParam,[mhandle],IDD_POPUP,HWND_DESKTOP,POPUP,[arg1]
 	invoke	ExitThread,0
+endp
 
 proc POPUP hwnddlg,msg,wparam,lparam
+	local param:DWORD
 	push	ebx esi edi
 	cmp	[msg],WM_INITDIALOG
 	je	.wminitdialog
@@ -22,7 +28,61 @@ proc POPUP hwnddlg,msg,wparam,lparam
 	xor	eax,eax
 	jmp	.finish
 .wminitdialog:
-	invoke	SetDlgItemTextA,[hwnddlg],ID_TEXT,[strg]
+	invoke	SetDlgItemTextA,[hwnddlg],ID_TEXT,[lparam]
+	;;;
+	invoke lstrlenA,[lparam]
+	mov ecx,eax
+	mov esi,[lparam]
+	xor eax,eax
+	xor edx,edx
+      .metka1:
+	.if edx>46
+		inc eax
+		xor edx,edx
+	     .metka5:
+		.if byte [esi]<>20h
+			inc edx
+			dec esi
+			jmp .metka5
+		.endif
+		add esi,edx
+	.elseif byte [esi]=0Ah
+		inc eax
+		xor edx,edx
+	.elseif
+		inc edx
+	.endif
+	inc esi
+	loop .metka1
+	.if eax>0
+		xor edx,edx
+		mov ebx,13
+		mul ebx
+		mov [param],eax
+		invoke GetWindowRect,[hwnddlg],coord
+		mov eax,[coord.top]
+		sub [coord.bottom],eax
+		mov eax,[coord.left]
+		sub [coord.right],eax
+		mov eax,[param]
+		add [coord.bottom],eax
+		invoke SetWindowPos,[hwnddlg],-1,0,0,[coord.right],[coord.bottom],SWP_NOMOVE
+		invoke GetDlgItem,[hwnddlg],ID_TEXT
+		push eax
+		invoke GetClientRect,eax,coord
+		mov eax,[param]
+		add [coord.bottom],eax
+		pop eax
+		invoke SetWindowPos,eax,HWND_TOP,0,0,[coord.right],[coord.bottom],SWP_NOMOVE
+		invoke GetDlgItem,[hwnddlg],0
+		push eax
+		invoke GetClientRect,eax,coord
+		mov eax,[param]
+		add [coord.bottom],eax
+		pop eax
+		invoke SetWindowPos,eax,HWND_TOP,0,0,[coord.right],[coord.bottom],SWP_NOMOVE
+	.endif
+	;;;
 	; Получить размер рабочей области экрана
 	invoke	SystemParametersInfo,SPI_GETWORKAREA,NULL,screen,FALSE
 
@@ -63,9 +123,14 @@ proc POPUP hwnddlg,msg,wparam,lparam
 	; Восстановить счетчик
 	pop	ecx
 	loop	@b
-
+	.if [flag_sec]=1
+		invoke InterlockedDecrement,flag_sec
+		mov eax,20000
+	.else
+		mov eax,2000
+	.endif
 	; Установить таймер закрытия окна на 2 секунды
-	invoke	SetTimer,[hwnddlg],TIMER_ID,2000,NULL
+	invoke	SetTimer,[hwnddlg],TIMER_ID,eax,NULL
 
 	jmp	.processed
 .wmcommand:

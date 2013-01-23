@@ -1,14 +1,21 @@
-proc preg_match mat, str, str2, bool
+;PARSER by Xekep
+proc preg_match mat, str, str2, bool, leng, sym
 	local mem:DWORD
 	local start1:DWORD
 	local flag:DWORD
+	local leng2:DWORD
+	local flag2:DWORD
+	mov [flag2],0
 	xor esi,esi
 	mov [flag],0
 	mov [start1],0
 	.if [bool]=0
 		invoke lstrlenA,[str]
+		mov [leng2],eax
 		invoke GlobalAlloc,GPTR,eax
 	.else
+		mov eax,[leng]
+		mov [leng2],eax
 		mov eax,[str2]
 		mov dword [eax],0
 		mov eax,[str2]
@@ -17,21 +24,35 @@ proc preg_match mat, str, str2, bool
 	mov ecx,[mem]
 	mov edx,[mat]
 	mov ebx,[str]
-	mov al, byte [edx]
+	mov al,byte [edx]
      pmmetka1:
 	.if byte [ebx]=al & byte [edx]<>0 & al<>'*'
 		inc [flag]
 		inc edx
 		inc ebx
 		mov al, byte [edx]
+		mov [start1],0
 		jmp pmmetka1
 	.elseif byte [edx]<>0
 		.if al='*'
+			.if [bool]>0 & ecx<>[mem] & [sym]<>-1 & [flag2]=0
+			       mov eax,[sym]
+			       .if eax<00000100h
+				       mov byte [ecx],al
+				       inc esi
+				       inc ecx
+			       .elseif eax<00010000h
+				       mov word [ecx],ax
+				       add esi,2
+				       add ecx,2
+			       .endif
+			.endif
+			mov [flag2],0
 			mov [start1],1
 			inc edx
 			mov al, byte [edx]
 			jmp pmmetka1
-		.elseif [start1]=1 & esi<=64
+		.elseif [start1]=1 & esi<=[leng2] & byte [ebx]<>0
 			push eax
 			inc esi
 			mov al,byte [ebx]
@@ -49,9 +70,25 @@ proc preg_match mat, str, str2, bool
 				inc ebx
 			.endif
 			jmp pmmetka1
+		.elseif byte [ebx]=0 & [flag2]=0
+			.if [bool]=0
+				invoke GlobalFree,[mem]
+			.endif
+			xor eax,eax
+			ret
 		.endif
+	.elseif [bool]=2 & byte [ebx]<>0
+		mov [flag2],1
+		mov word [ecx],0
+		add ecx,2
+		add esi,2
+		mov [flag],0
+		mov [start1],0
+		mov edx,[mat]
+		mov al,byte [edx]
+		jmp pmmetka1
 	.endif
-	mov byte [ecx],0
+	mov dword [ecx],0
 	.if [bool]=0
 		invoke lstrcmpA,[mem],[str2]
 		.if eax=-1 | eax>0
