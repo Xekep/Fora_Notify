@@ -9,6 +9,7 @@ TIME_LACCEPT = 1000
 COUNT = 10
 
 proc plicense hwnd, msg, wparam, lparam
+	local buton rb 25
 	push ebx edi esi
 	cmp [msg],WM_INITDIALOG
 	je .wminitdialog
@@ -24,18 +25,19 @@ proc plicense hwnd, msg, wparam, lparam
 	jmp .finish
    .wminitdialog:
 	call set_seh
-	invoke SetDlgItemTextA,[hwnd],4,'Copyright © 2010, Xekep. All rights reserved.'
+	invoke SetDlgItemTextA,[hwnd],4,'Copyright © 2010-2011, Xekep. All rights reserved.'
 	invoke LoadIcon,[mhandle],ID_ICON
 	invoke SendMessageA,[hwnd],WM_SETICON,ICON_BIG,eax
 	.if [lparam]=0
 		invoke GetDlgItem,[hwnd],ID_ACCEPT
 		invoke EnableWindow,eax,0
 		invoke SetTimer,[hwnd],TIMER_LACCEPT,TIME_LACCEPT,0
-		invoke GlobalAlloc,GPTR,64
-		mov [lmem],eax
 		mov [time_count],COUNT
-		invoke wsprintfA,[lmem],.button,[time_count]
-		invoke SetDlgItemTextA,[hwnd],ID_ACCEPT,[lmem]
+		lea eax,[buton]
+		push eax
+		cinvoke wsprintfA,eax,.button,[time_count]
+		pop eax
+		invoke SetDlgItemTextA,[hwnd],ID_ACCEPT,eax
 	.else
 		invoke GetDlgItem,[hwnd],ID_DECLINE
 		invoke EnableWindow,eax,0
@@ -64,21 +66,23 @@ proc plicense hwnd, msg, wparam, lparam
 		invoke GetDlgItem,[hwnd],ID_ACCEPT
 		invoke EnableWindow,eax,1
 		invoke KillTimer,[hwnd],TIMER_LACCEPT
-		invoke GlobalFree,[lmem]
 		jmp .processed
 	.endif
-	invoke wsprintfA,[lmem],.button,[time_count]
-	invoke SetDlgItemTextA,[hwnd],ID_ACCEPT,[lmem]
+	lea eax,[buton]
+	push eax
+	cinvoke wsprintfA,eax,.button,[time_count]
+	pop eax
+	invoke SetDlgItemTextA,[hwnd],ID_ACCEPT,eax
 	jmp .processed
 .accept:
 	invoke RegOpenKeyEx,key_root,subkey2,0,KEY_ALL_ACCESS,HKey
 	.if eax<>0
-		invokex DialogPOPUP,stat_err_reg,0
+		stdcall DialogPOPUP,stat_err_reg,0
 		jmp .decline
 	.endif
 	invoke RegSetValueEx,[HKey],key_name7,0,REG_BINARY,flagg,1
 	.if eax<>0
-		invokex DialogPOPUP,stat_err_reg,0
+		stdcall DialogPOPUP,stat_err_reg,0
 		invoke RegCloseKey,[HKey]
 		jmp .decline
 	.endif
@@ -88,9 +92,6 @@ proc plicense hwnd, msg, wparam, lparam
 .decline:
 	invoke EndDialog,[hwnd],0
 	.if [flag_license]<>1
-		.if [time_count]<>0
-			invoke GlobalFree,[lmem]
-		.endif
 		invoke ExitProcess,0
 	.endif
 	ret
@@ -103,7 +104,7 @@ proc getlicense
 	.if eax<>0
 		invoke RegCreateKeyA,key_root,subkey2,HKey
 		.if eax<>0
-			invokex DialogPOPUP,stat_err_reg,0
+			stdcall DialogPOPUP,stat_err_reg,0
 		.endif
 	.else
 		invoke RegQueryValueExA,[HKey],key_name7,0,lpType,flag_license,vsize

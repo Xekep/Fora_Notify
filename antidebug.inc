@@ -1,101 +1,177 @@
 data	    9
-	    dd a ; StartAddressOfRawData;
+	    dd a ; StartAddressOfRawData
 	    dd a ; EndAddressOfRawData
 	    dd a ; AddressOfIndex
 	    dd c ; AddressOfCallBacks
-a	    dd 0 ;
+a	    dd 0 ; Size of Zero Fill
+b	    dd ? ; Characteristics
 c	    dd callback ; Array Of Callbacks
 d	    dd 0
 	    dd 0	; NULL - end of Array Of Callbacks
 end data
 
-proc	callback,handle,reason,reserved
-	cmp [reason],DLL_PROCESS_ATTACH
-	jnz end.
-	xor ebx,ebx
-	invoke CreateMutexA,ebx,ebx,'muttexx'
-	invoke GetLastError
-	.if eax<>0b7h
-		mov [d],new_EP
-		mov eax,dword [fs:18h]
-		mov eax,[eax+30h]
-		movzx eax,byte [eax+2]
-		test eax,eax
-		je @f
-		;jmp @f
-	       ; mov ecx,esp
-	    ; .metke1:
-	       ; inc ecx
-	       ; cmp dword [ecx],start
-	       ; jne .metke1
-	       ; mov dword [ecx],new_EP
-		ret
-		@@:
-		mov ebp,s13
-		push ebp
-		invoke GetStartupInfoA,s13
-		invoke GetCommandLineA
-		sub esp,sizeof.PROCESS_INFORMATION
-		invoke CreateProcessA,ebx,eax,ebx,ebx,ebx,ebx,ebx,ebx,ebp,esp
-		pop eax
-		invoke WaitForSingleObject,eax,-1
-		invoke ExitProcess,0
-	.endif
-	xor ebx,ebx
-	invoke CreateMutexA,ebx,ebx,'muttexx2'
-	invoke GetLastError
-	.if eax<>0b7h
-		mov [d],new_EP
-		mov eax,dword [fs:18h]
-		mov eax,[eax+30h]
-		movzx eax,byte [eax+2]
-		test eax,eax
-		je @f
-		;jmp @f
-	      ;  mov ecx,esp
-	     ;.metke2:
-	      ;  inc ecx
-	      ;  cmp dword [ecx],start
-	      ;  jne .metke2
-	      ;  mov dword [ecx],new_EP
-		ret
-		@@:
-		invoke GetStartupInfoA,s13
-		invoke GetCommandLineA
-		invoke CreateProcessA,ebx,eax,ebx,ebx,ebx,DEBUG_PROCESS,ebx,ebx,s13,s14
-		mov ebx,s15
-		jmp l2
-		l1:
-		invoke ContinueDebugEvent,dword [s15+4],dword [s15+8],10002h;DBG_CONTINUE      [s14.dwProcessId]  [s14.dwThreadId]
-		l2:
-		invoke WaitForDebugEvent,ebx,-1
-		cmp byte [ebx],5
-		;EXIT_PROCESS_DEBUG_EVENT
-		jne   l1
-		invoke ExitProcess,0
-	.endif
-	mov [d],start
-      ;  mov eax,dword [fs:18h]
-      ;  mov eax,[eax+30h]
-      ;  movzx eax,byte [eax+2]
-      ;  test eax,eax
-      ;  je @f
-      ;  ;jmp @f
-      ;  mov ecx,esp
-      ;.metke:
-      ;  inc ecx
-      ;  cmp dword [ecx],start
-      ;  jne .metke
-      ;  mov dword [ecx],new_EP
-end.:
-	ret
+TH32CS_SNAPPROCESS = 2
+struct ProcessEntry32
+    dwSize		dd ?
+    cntUsage		dd ?
+    th32ProcessID	dd ?
+    th32DefaultHeapID	dd ?
+    th32ModuleID	dd ?
+    cntThreads		dd ?
+    th32ParentProcessID dd ?
+    pcPriClassBase	dd ?
+    dwFlags		dd ?
+    szExeFile		rb MAX_PATH
+ends
 
-	s13 STARTUPINFO
-	s14 PROCESS_INFORMATION;
-	s15 rb 60h;DEBUG_EVENT;
+proc	callback handle,reason,reserved
+	local .hMutex:DWORD
+	local .s13:STARTUPINFO
+	local .s14:PROCESS_INFORMATION
+
+	cmp [reason],DLL_PROCESS_ATTACH
+	jnz .end!
+	xor ebx,ebx
+	if DEBUG=0
+		fake_ff
+		invokex CreateMutexA,ebx,ebx,trayname
+		mov [.hMutex],eax
+		invokex GetLastError
+		.if eax<>0b7h
+			lea eax,[.s13]
+			invoke GetStartupInfoA,eax
+			invoke GetCommandLineA
+			lea edi,[.s13]
+			lea esi,[.s14]
+			invokex CreateProcessA,ebx,eax,ebx,ebx,ebx,ebx,ebx,ebx,edi,esi
+			invokex WaitForSingleObject,[.s14.hProcess],-1
+			invokex CloseHandle,[.hMutex]
+			invokex ExitProcess,0
+		.endif
+		; Убийство родительского процесса
+		invokex CreateToolhelp32Snapshot,TH32CS_SNAPPROCESS,ebx
+		cmp eax,-1
+		je @f
+		mov edi,eax
+		invokex GetCurrentProcessId
+		stdcall .kill,edi,eax
+		@@:
+		; Убийство мьютекса
+		invokex CloseHandle,[.hMutex]
+		mov eax,[fs:30h] ;указатель на PEB
+		cmp byte [eax+2], 0 ;проверка флага BeingDebugged
+		jne .end!
+
+		invokex LoadLibraryA,'NTDLL.DLL'
+		invokex GetProcAddress,eax,'NtQueryInformationProcess'
+		lea ecx,[.s14]
+		stdcall eax,-1,7,ecx,4,0
+		cmp dword [.s14],0
+		jne .end!
+	end if
+	mov [d],.callback2
+.end!:
+	ret
 endp
-new_EP:
-	    invoke MessageBoxA,0,'Отладчик детектед (:',0,MB_ICONWARNING+MB_OK
-	    int 3
-	    invoke ExitProcess,0
-	    ret
+
+proc .callback2 handle,reason,reserved
+	local lpflOldProtec:DWORD
+
+	cmp [reason],DLL_PROCESS_ATTACH
+	jne @f
+	mov [d],0
+	invokex GetModuleHandleA,0
+	mov [mhandle],eax
+	invokex LoadLibraryA,'riched32.dll'
+	invokex LoadLibraryA,'msvcrt.dll'
+	invokex GetProcAddress,eax,time
+	mov [time],eax
+	invokex LoadLibrary,'MSIMG32.dll'
+	invokex GetProcAddress,eax,TransparentBlt
+	mov dword [TransparentBlt],eax
+	if DEBUG=0
+		invokex SetTimer,0,TIMER_CRC32,TIME_CRC32,scrc32
+	end if
+	; генерация таблицы
+	;CRC32TableGen CrtTable
+	@@:
+	ret
+endp
+
+proc .kill hSnapshot,pid
+	local pentry:ProcessEntry32
+	local result dd 0
+
+	lea eax,[pentry]
+	invokex RtlZeroMemory,eax,sizeof.ProcessEntry32
+	mov [pentry.dwSize],sizeof.ProcessEntry32
+	@@:
+	lea eax,[pentry]
+	invokex Process32Next,[hSnapshot],eax
+	mov ecx,[pid]
+	.if [pentry.th32ProcessID]=ecx & eax<>0
+		invokex OpenProcess,PROCESS_TERMINATE,0,[pentry.th32ParentProcessID]
+		test eax,eax
+		je .exit
+		invokex TerminateProcess,eax,0
+		mov [result],1
+		jmp @b
+	.elseif eax=1
+		; Убийство отладчиков
+		lea eax,[pentry.szExeFile]
+		stdcall .TerminateDBGProcess,eax,[pentry.th32ProcessID]
+		jmp @b
+	.endif
+      .exit:
+	invokex CloseHandle,[hSnapshot]
+	mov eax,[result]
+	ret
+endp
+
+proc .TerminateDBGProcess pname,pid
+	pushad
+	mov ecx,18
+	mov esi,.parray
+	@@:
+	push ecx
+	push esi
+	invokex lstrcmpiA,dword [esi],[pname]
+	.if eax=0
+		invokex OpenProcess,PROCESS_TERMINATE,0,[pid]
+		invokex TerminateProcess,eax,0
+		add esp,8
+		popad
+		xor eax,eax
+		inc eax
+		ret
+	.endif
+	pop esi
+	pop ecx
+	add esi,4
+	loop @b
+	popad
+	xor eax,eax
+	ret
+	.parray dd .olly,.hassistant,.cengine,.artmoney,\
+		   .winhex,.hiew,.hdasm,.w32dasm,.ida,.ida64,.petools,\
+		   .lordpe,.peid,.rdgpd,.die,.imprec,.windbg,.imdbg,0
+
+	.olly db 'OLLYDBG.EXE',0
+	.hassistant db 'HEXASSISTANT.EXE',0
+	.cengine db 'CHEAT ENGINE.EXE',0
+	.artmoney db 'ARTMONEY.EXE',0
+	.winhex db 'WINHEX.EXE',0
+	.hiew db 'HIEW.EXE',0
+	.hdasm db 'HDASM.EXE',0
+	.w32dasm db 'W32DASM.EXE',0
+	.ida db 'IDAG.EXE',0
+	.ida64 db 'IDAG64.EXE',0
+	.petools db 'PETOOLS.EXE',0
+	.lordpe db 'LORDPE.EXE',0
+	.peid db 'PEID.EXE',0
+	.rdgpd db 'RDG PACKER DETECTOR.EXE',0
+	.die db 'DIE.EXE',0
+	.imprec db 'IMPORTREC.EXE',0
+	.windbg db 'WINDBG.EXE',0
+	.imdbg db 'IMMUNITYDEBUGGER.EXE',0
+endp

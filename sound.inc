@@ -1,6 +1,6 @@
 proc sound param
 	.if [param]=1 &  [music_flag]=0
-		invokex getwinfullscr
+		stdcall getwinfullscr
 		.if eax=1
 			ret
 		.endif

@@ -63,7 +63,7 @@ uFMOD_GetTime  = ufmod_dump + 1019h
 ; but don't modify anything else :-)
 ; Do not remove W and E attributes!
 ; Must be at 0x00401000!
-section 'uFMOD' data readable writeable executable
+section '.data2' data readable writeable executable
 ;##################################################
 ;#            Modifed by CyberDoom Systems        #
 ;##################################################

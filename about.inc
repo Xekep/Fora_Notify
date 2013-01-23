@@ -19,12 +19,12 @@ proc aboutproc hwnd, msg, wparam, lparam
 	je .wmclose
 	jmp .processed
   .wminitdialog:
-	invokex sound,2
+	stdcall sound,2
 	invoke SetWindowPos,[hwnd],HWND_TOPMOST,0,0,0,0,SWP_NOMOVE+SWP_NOSIZE
 	call .wminit
 	jmp .processed
   .wmclose:
-	invokex sound,3
+	stdcall sound,3
 	invoke EndDialog,[hwnd],0
 	ret
   .processed:

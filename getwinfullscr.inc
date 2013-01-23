@@ -5,27 +5,38 @@ proc getwinfullscr
 	mov [hwnd],eax
 	invoke GetForegroundWindow
 	.if eax=[hwnd]
-		mov eax,0
+		xor eax,eax
 		jmp .exit
 	.endif
-     ;   push eax
-     ;   invoke GetWindowLongA,eax,GWL_STYLE
-     ;   or eax,WS_CAPTION + WS_BORDER
-     ;   jne .metka1
-     ;           pop eax
-     ;           mov eax,0
-     ;           jmp .exit
-     ;.metka1:
-     ;   pop eax
+
+	push eax
+	invoke GetWindowLongA,eax,GWL_STYLE
+	mov ecx,eax
+	mov esi,eax
+	xor eax,eax
+	pop ebx
+	and ecx,0FFFFFFFFh - WS_THICKFRAME
+	je @f
+	jg @f
+	mov ecx,esi
+	and ecx,0FFFFFFFFh - WS_CAPTION
+	je .exit
+	jg .exit
+	mov ecx,esi
+	and ecx,0FFFFFFFFh - WS_BORDER
+	je .exit
+	jg .exit
+	@@:
+
 	lea ecx,[wplmt]
-	invoke GetWindowPlacement,eax,ecx
+	invoke GetWindowPlacement,ebx,ecx
 	.if [wplmt.rcNormalPosition.left]<>0 | [wplmt.rcNormalPosition.top]<>0
 		xor eax,eax
 		jmp .exit
 	.endif
 	invoke GetSystemMetrics,SM_CXSCREEN
 	.if eax>[wplmt.rcNormalPosition.right]
-		xor eax,eax
+	       xor eax,eax
 		jmp .exit
 	.endif
 	invoke GetSystemMetrics,SM_CYSCREEN
@@ -33,7 +44,8 @@ proc getwinfullscr
 		xor eax,eax
 		jmp .exit
 	.endif
-	mov eax,1
+	xor eax,eax
+	inc eax
       .exit:
 	ret
 endp

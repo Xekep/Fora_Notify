@@ -100,6 +100,7 @@ proc tarifproc hwnd, msg, wparam, lparam
 	invoke CreateThread,0,0,save_tarif,[hwnd],0,0
 	jmp .processed
     .exit:
+	invoke DeleteObject,[thUrlBrush]
 	invoke GlobalFree,[tarifi]
 	invoke DeleteObject,[font1]
 	invoke DeleteObject,[font2]
@@ -118,10 +119,10 @@ proc tarifproc hwnd, msg, wparam, lparam
 	.endif
 	jmp .processed
      .err_mem:
-	invokex DialogPOPUP,err_mem1,1
+	stdcall DialogPOPUP,err_mem1,1
 	jmp .wmclose
      .timer:
-	.if [wparam]=666 & [tprogress]=100
+	.if [wparam]=666 & [tprogress]=101
 		invoke KillTimer,[hwnd],666
 		invoke CreateFontW,16,0,0,0,0,0,0,0,ANSI_CHARSET or DEFAULT_CHARSET,0,0,ANTIALIASED_QUALITY,DEFAULT_PITCH or FF_DONTCARE,"Arial"
 		mov [font1],eax
@@ -164,14 +165,14 @@ proc tarifproc hwnd, msg, wparam, lparam
 			inc eax
 			mov esi,eax
 		.endif
-		invokex ConcatStrings,[tmem],4,ecx,' - Ежемесячный платёж: ',esi,' руб.'
+		stdcall ConcatStrings,[tmem],4,ecx,' - Ежемесячный платёж: ',esi,' руб.'
 		add eax,esi
 		mov byte [eax],0
 		pop eax
 		pop esi
 		push esi
 		push eax
-		invokex .createwin,[hwnd],eax,[font1],[tmem],16,esi,375,30
+		stdcall .createwin,[hwnd],eax,[font1],[tmem],16,esi,375,30
 		mov eax,[tmem]
 		mov byte [eax],0
 		pop eax
@@ -211,8 +212,10 @@ proc .process hwnd
 	local gb_right:DWORD
 	local gb_bottom:DWORD
 	local flag:DWORD
+	local tcoord:RECT
 	mov [flag],0
-	invoke GetWindowRect,[hwnd],tcoord
+	lea eax,[tcoord]
+	invoke GetWindowRect,[hwnd],eax
 	mov eax,[tcoord.right]
 	mov [w_right],eax
 	mov eax,[tcoord.bottom]
@@ -246,7 +249,8 @@ proc .process hwnd
 	invoke ShowWindow,eax,SW_HIDE
 	invoke GetDlgItem,[hwnd],ID_4
 	push eax
-	invoke GetClientRect,eax,tcoord
+	lea ecx,[tcoord]
+	invoke GetClientRect,eax,ecx
 	mov eax,[tcoord.right]
 	mov [gb_right],eax
 	mov eax,[tcoord.bottom]
@@ -258,7 +262,9 @@ proc .process hwnd
       .metka1:
 	mov eax,[tprogress]
 	invoke SendDlgItemMessage,[hwnd],ID_PROGRESS,PBM_SETPOS,eax,0
-	.if [tprogress]>39 & [flag]=0
+	.if [tprogress]=-1
+		invoke ExitThread,0
+	.elseif [tprogress]>39 & [flag]=0 & [tprogress]<>-1
 		mov [flag],1
 		invoke GetDlgItem,[hwnd],ID_4
 		invoke SetWindowPos,eax,HWND_TOP,11,90,0,0,SWP_NOSIZE
@@ -280,7 +286,7 @@ proc .process hwnd
 		invoke GetDlgItem,[hwnd],ID_3
 		invoke ShowWindow,eax,SW_SHOW
 		jmp .metka1
-	.elseif [tprogress]=100 & [flag]=1
+	.elseif [tprogress]=100 & [flag]=1 & [tprogress]<>-1
 		invoke GetDlgItem,[hwnd],ID_TSAVE
 		push eax
 		mov eax,[count]
@@ -322,9 +328,8 @@ proc .process hwnd
 		invoke SetWindowPos,[hwnd],-1,0,0,[w_right],[w_bottom],SWP_NOMOVE
 		invoke GetDlgItem,[hwnd],ID_4
 		invoke SetWindowPos,eax,HWND_TOP,0,0,[gb_right],[gb_bottom],SWP_NOMOVE
-		invokex SetWindowCenter,[hwnd]
-		invoke ExitThread,0
-	.elseif [tprogress]=-1
+		stdcall SetWindowCenter,[hwnd]
+		mov [tprogress],101
 		invoke ExitThread,0
 	.else
 		invoke Sleep,100
@@ -348,13 +353,12 @@ proc get_tarif hwnd
 	local buff:DWORD
 	local post:DWORD
 	local mem:DWORD
-	local mem2:DWORD
 	local curtarif:DWORD
 	local selecttarif:DWORD
 	mov [vsize],64
 	invoke RegOpenKeyExA,key_root,subkey2,0,KEY_QUERY_VALUE,HKey
 	.if eax<>0
-		invokex DialogPOPUP,err_acc,1
+		stdcall DialogPOPUP,err_acc,1
 		mov [tprogress],-1
 		jmp .exit
 	.endif
@@ -363,49 +367,40 @@ proc get_tarif hwnd
 	invoke RegQueryValueExA,[HKey],key1,0,lpType,dword [buff_login],vsize
 	.if eax<>0
 		invoke RegCloseKey,[HKey]
-		invokex DialogPOPUP,err_acc,1
+		stdcall DialogPOPUP,err_acc,1
 		invoke GlobalFree,dword [buff_login]
 		mov [tprogress],-1
 		jmp .exit
 	.endif
-	mov ecx,[vsize]
-	mov eax,dword [buff_login]
-	.if byte [eax]<>0
+	stdcall TEAdecrypt,[buff_login],[vsize]
+	mov eax,[buff_login]
+	.if byte [eax]=0 | byte [eax]<>'f'
 		invoke RegCloseKey,[HKey]
-		invokex DialogPOPUP,err_acc,1
+		stdcall DialogPOPUP,err_acc,1
 		invoke GlobalFree,dword [buff_login]
 		mov [tprogress],-1
 		jmp .exit
 	.endif
-      .metka1:
-	xor byte [eax],66h
-	inc eax
-	loop .metka1
 	mov [vsize],64
 	invoke GlobalAlloc,GPTR,64
 	mov dword [buff_pass],eax
 	invoke RegQueryValueExA,[HKey],key2,0,lpType,dword [buff_pass],vsize
 	.if eax<>0
 		invoke RegCloseKey,[HKey]
-		invokex DialogPOPUP,err_acc,1
+		stdcall DialogPOPUP,err_acc,1
 		invoke GlobalFree,dword [buff_pass]
 		invoke GlobalFree,dword [buff_login]
 		mov [tprogress],-1
 		jmp .exit
 	.endif
-	mov ecx,[vsize]
-	mov eax,dword [buff_pass]
-      .metka2:
-	xor byte [eax],66h
-	inc eax
-	loop .metka2
+	stdcall TEAdecrypt,[buff_pass],[vsize]
 	invoke RegCloseKey,[HKey]
 	invoke GlobalAlloc,GPTR,MAX_FILE_SIZE
 	.if eax=0
 		jmp .err_mem
 	.endif
 	mov [post],eax
-	invokex ConcatStrings,[post],4,'password=',[buff_pass],'&login=',[buff_login]
+	stdcall ConcatStrings,[post],4,'password=',[buff_pass],'&login=',[buff_login]
 	add eax,esi
 	invoke GlobalFree,[buff_pass]
 	invoke GlobalFree,[buff_login]
@@ -413,31 +408,27 @@ proc get_tarif hwnd
 	test eax,eax
 	je .err_mem
 	mov [buff],eax
-	invokex request,[buff],thost,'/session',tuseragent,'POST',[post],MAX_FILE_SIZE,1
+	stdcall request,[buff],thost,'/session',tuseragent,'POST',[post],MAX_FILE_SIZE,1
 	.if eax=0
 		jmp .err_connect
 	.endif
 	add [tprogress],10
-	invoke GlobalAlloc,GPTR,MAX_FILE_SIZE*2
+	invoke GlobalAlloc,GPTR,MAX_FILE_SIZE
 	mov [mem],eax
-	invoke GlobalAlloc,GPTR,MAX_FILE_SIZE*2
-	mov [mem2],eax
-	invoke MultiByteToWideChar,CP_UTF8,0,[buff],-1,[mem],MAX_FILE_SIZE*2
-	invoke WideCharToMultiByte,1251,0,[mem],-1,[mem2],MAX_FILE_SIZE*2,0,0
+	invoke MultiByteToWideChar,CP_UTF8,0,[buff],-1,[mem],MAX_FILE_SIZE
+	invoke WideCharToMultiByte,1251,0,[mem],-1,[buff],MAX_FILE_SIZE,0,0
 	invoke GlobalFree,[mem]
-	invokex preg_match,tpreg_message,[mem2],.message_hello,0,0,-1
+	stdcall preg_match,tpreg_message,[buff],.message_hello,0,0,-1
 	.if eax<>1
-		invokex preg_match,tpreg_message,[mem2],[post],1,64,0
+		stdcall preg_match,tpreg_message,[buff],[post],1,64,0
 		.if eax<>0
-			invokex DialogPOPUP,[post],1
+			stdcall DialogPOPUP,[post],1
 			invoke Sleep,2000
 		.endif
-		invoke GlobalFree,[mem2]
 		jmp .err_connect
 	.else
-		invokex preg_match,.preg_name,[mem2],[post],1,64,0
+		stdcall preg_match,.preg_name,[buff],[post],1,64,0
 		.if eax=0
-			invoke GlobalFree,[mem2]
 			jmp .err_connect
 		.else
 			invoke SetDlgItemTextA,[hwnd],ID_NAME,[post]
@@ -447,18 +438,16 @@ proc get_tarif hwnd
 		test eax,eax
 		je .err_mem
 		mov [curtarif],eax
-		invokex preg_match,.preg_curtarif,[mem2],[curtarif],1,64,0
+		stdcall preg_match,.preg_curtarif,[buff],[curtarif],1,64,0
 		.if eax=0
-			invoke GlobalFree,[mem2]
 			invoke GlobalFree,[curtarif]
 			jmp .err_connect
 		.else
 			invoke SetDlgItemTextA,[hwnd],ID_CURTARIF,[curtarif]
 			add [tprogress],10
 		.endif
-		invokex preg_match,.preg_money,[mem2],[post],1,64,0
+		stdcall preg_match,.preg_money,[buff],[post],1,64,0
 		.if eax=0
-			invoke GlobalFree,[mem2]
 			invoke GlobalFree,[curtarif]
 			jmp .err_connect
 		.else
@@ -467,25 +456,22 @@ proc get_tarif hwnd
 			add [tprogress],10
 		.endif
 	.endif
-	invoke GlobalFree,[mem2]
 	invoke GlobalFree,[buff]
 	invoke GlobalAlloc,GPTR,MAX_FILE_SIZE
 	test eax,eax
 	je .err_mem
 	mov [buff],eax
-	invokex request,[buff],thost,'/tariff/new',tuseragent,'GET',0,MAX_FILE_SIZE,1
+	stdcall request,[buff],thost,'/tariff/new',tuseragent,'GET',0,MAX_FILE_SIZE,1
 	.if eax=0
 		invoke GlobalFree,[curtarif]
 		jmp .err_connect
 	.endif
 	;
-	invoke GlobalAlloc,GPTR,MAX_FILE_SIZE*2
+	invoke GlobalAlloc,GPTR,MAX_FILE_SIZE
 	mov [mem],eax
-	invoke GlobalAlloc,GPTR,MAX_FILE_SIZE*2
-	mov [mem2],eax
-	invoke MultiByteToWideChar,CP_UTF8,0,[buff],-1,[mem],MAX_FILE_SIZE*2
-	invoke WideCharToMultiByte,1251,0,[mem],-1,[mem2],MAX_FILE_SIZE*2,0,0
-	invokex preg_match,.preg_curmoney,[mem2],[mem],1,64,0
+	invoke MultiByteToWideChar,CP_UTF8,0,[buff],-1,[mem],MAX_FILE_SIZE
+	invoke WideCharToMultiByte,1251,0,[mem],-1,[buff],MAX_FILE_SIZE,0,0
+	stdcall preg_match,.preg_curmoney,[buff],[mem],1,64,0
 	.if eax<>0
 		invoke GlobalAlloc,GPTR,64
 		test eax,eax
@@ -501,9 +487,8 @@ proc get_tarif hwnd
 		@@:
 	.endif
 	invoke GlobalFree,[mem]
-	invokex preg_match,.preg_tarif,[mem2],[post],2,MAX_FILE_SIZE,0
+	stdcall preg_match,.preg_tarif,[buff],[post],2,MAX_FILE_SIZE,0
 	.if eax=0
-		invoke GlobalFree,[mem2]
 		invoke GlobalFree,[curtarif]
 		jmp .err_connect
 	.endif
@@ -511,9 +496,8 @@ proc get_tarif hwnd
 	test eax,eax
 	je .err_mem
 	mov [selecttarif],eax
-	invokex preg_match,.preg_selecttarif,[mem2],[selecttarif],1,64,0
+	stdcall preg_match,.preg_selecttarif,[buff],[selecttarif],1,64,0
 	.if eax=0
-		invoke GlobalFree,[mem2]
 		invoke GlobalFree,[curtarif]
 		invoke GlobalFree,[selecttarif]
 		jmp .err_connect
@@ -592,23 +576,22 @@ proc get_tarif hwnd
 	.endif
 	invoke GlobalFree,[curtarif]
 	invoke GlobalFree,[selecttarif]
-	invoke GlobalFree,[mem2]
 	invoke GlobalFree,[buff]
 	invoke ExitThread,0
      .exit:
 	invoke ExitThread,0
  .err_login:
-	invokex DialogPOPUP,err_connect4,1
+	stdcall DialogPOPUP,err_connect4,1
 	mov [tprogress],-1
 	jmp .exit
   .err_connect:
-	invokex DialogPOPUP,err_connect3,1
+	stdcall DialogPOPUP,err_connect3,1
 	invoke GlobalFree,[buff]
 	invoke GlobalFree,[post]
 	mov [tprogress],-1
 	jmp .exit
      .err_mem:
-	invokex DialogPOPUP,err_mem1,1
+	stdcall DialogPOPUP,err_mem1,1
 	mov [tprogress],-1
 	jmp .exit
 
@@ -629,7 +612,6 @@ proc save_tarif hwnd
 	local post:DWORD
 	local buff:DWORD
 	local mem:DWORD
-	local mem2:DWORD
 	local buff_login:DWORD
 	local buff_pass:DWORD
 	local token:DWORD
@@ -653,7 +635,7 @@ proc save_tarif hwnd
 	mov [vsize],64
 	invoke RegOpenKeyExA,key_root,subkey2,0,KEY_QUERY_VALUE,HKey
 	.if eax<>0
-		invokex DialogPOPUP,err_acc,1
+		stdcall DialogPOPUP,err_acc,1
 		jmp .exit
 	.endif
 	invoke GlobalAlloc,GPTR,64
@@ -661,7 +643,7 @@ proc save_tarif hwnd
 	invoke RegQueryValueExA,[HKey],key1,0,lpType,dword [buff_login],vsize
 	.if eax<>0
 		invoke RegCloseKey,[HKey]
-		invokex DialogPOPUP,err_acc,1
+		stdcall DialogPOPUP,err_acc,1
 		invoke GlobalFree,dword [buff_login]
 		jmp .exit
 	.endif
@@ -669,7 +651,7 @@ proc save_tarif hwnd
 	mov eax,dword [buff_login]
 	.if byte [eax]<>0
 		invoke RegCloseKey,[HKey]
-		invokex DialogPOPUP,err_acc,1
+		stdcall DialogPOPUP,err_acc,1
 		invoke GlobalFree,dword [buff_login]
 		jmp .exit
 	.endif
@@ -683,7 +665,7 @@ proc save_tarif hwnd
 	invoke RegQueryValueExA,[HKey],key2,0,lpType,dword [buff_pass],vsize
 	.if eax<>0
 		invoke RegCloseKey,[HKey]
-		invokex DialogPOPUP,err_acc,1
+		stdcall DialogPOPUP,err_acc,1
 		invoke GlobalFree,dword [buff_pass]
 		invoke GlobalFree,dword [buff_login]
 		jmp .exit
@@ -708,46 +690,42 @@ proc save_tarif hwnd
 		jmp .err_mem
 	.endif
 	mov [post],eax
-	invokex request,[buff],thost,'/session/new',tuseragent,'GET',0,MAX_FILE_SIZE,1;
+	stdcall request,[buff],thost,'/session/new',tuseragent,'GET',0,MAX_FILE_SIZE,1;
 	.if eax=0
 		invoke GlobalFree,dword [buff_pass]
 		invoke GlobalFree,dword [buff_login]
 		jmp .err_connect
 	.endif
-	invokex preg_match,tpreg_token,[buff],[token],1,100,-1
+	stdcall preg_match,tpreg_token,[buff],[token],1,100,-1
 	.if eax=0
 		invoke GlobalFree,[buff_pass]
 		invoke GlobalFree,[buff_login]
 		jmp .err_connect
 	.endif;
-	invokex ConcatStrings,[post],6,'password=',[buff_pass],'&login=',[buff_login],ttoken_name,[token];4
-	invoke GlobalFree,[buff];
+	stdcall ConcatStrings,[post],6,'password=',[buff_pass],'&login=',[buff_login],ttoken_name,[token];4
+	invoke GlobalFree,[buff]
 	invoke GlobalAlloc,GPTR,MAX_FILE_SIZE
 	test eax,eax
 	je .err_mem
 	mov [buff],eax
-	invokex request,[buff],thost,'/session',tuseragent,'POST',[post],MAX_FILE_SIZE,1
+	stdcall request,[buff],thost,'/session',tuseragent,'POST',[post],MAX_FILE_SIZE,1
 	.if eax=0
 		jmp .err_connect
 	.endif
-	invoke GlobalAlloc,GPTR,MAX_FILE_SIZE*2
+	invoke GlobalAlloc,GPTR,MAX_FILE_SIZE
 	mov [mem],eax
-	invoke GlobalAlloc,GPTR,MAX_FILE_SIZE*2
-	mov [mem2],eax
-	invoke MultiByteToWideChar,CP_UTF8,0,[buff],-1,[mem],MAX_FILE_SIZE*2
-	invoke WideCharToMultiByte,1251,0,[mem],-1,[mem2],MAX_FILE_SIZE*2,0,0
+	invoke MultiByteToWideChar,CP_UTF8,0,[buff],-1,[mem],MAX_FILE_SIZE
+	invoke WideCharToMultiByte,1251,0,[mem],-1,[buff],MAX_FILE_SIZE,0,0
 	invoke GlobalFree,[mem]
-	invokex preg_match,tpreg_message,[mem2],'Добро пожаловать!',0,0,-1
+	stdcall preg_match,tpreg_message,[buff],'Добро пожаловать!',0,0,-1
 	.if eax<>1
-		invokex preg_match,tpreg_message,[mem2],[post],1,64,0
+		stdcall preg_match,tpreg_message,[buff],[post],1,64,0
 		.if eax<>0
-			invokex DialogPOPUP,[post],1
+			stdcall DialogPOPUP,[post],1
 			invoke Sleep,2000
 		.endif
-		invoke GlobalFree,[mem2]
 		jmp .err_connect
 	.endif
-	invoke GlobalFree,[mem2]
 	invoke GlobalFree,[buff]
 	mov eax,[post]
 	mov dword [eax],0
@@ -765,25 +743,23 @@ proc save_tarif hwnd
 		add eax,2
 		jmp .metka2
 	.endif
-	invokex ConcatStrings,[post],4,'tariff_code=',eax,ttoken_name,[token]
+	stdcall ConcatStrings,[post],4,'tariff_code=',eax,ttoken_name,[token]
 	invoke GlobalAlloc,GPTR,MAX_FILE_SIZE
 	test eax,eax
 	je .err_mem
 	mov [buff],eax
-	invokex request,[buff],thost,'/tariff',tuseragent,'POST',[post],MAX_FILE_SIZE,1
+	stdcall request,[buff],thost,'/tariff',tuseragent,'POST',[post],MAX_FILE_SIZE,1
 	.if eax=0
 		jmp .err_connect
 	.endif
-	invoke GlobalAlloc,GPTR,MAX_FILE_SIZE*2
+	invoke GlobalAlloc,GPTR,MAX_FILE_SIZE
 	mov [mem],eax
-	invoke GlobalAlloc,GPTR,MAX_FILE_SIZE*2
-	mov [mem2],eax
-	invoke MultiByteToWideChar,CP_UTF8,0,[buff],-1,[mem],MAX_FILE_SIZE*2
-	invoke WideCharToMultiByte,1251,0,[mem],-1,[mem2],MAX_FILE_SIZE*2,0,0
+	invoke MultiByteToWideChar,CP_UTF8,0,[buff],-1,[mem],MAX_FILE_SIZE
+	invoke WideCharToMultiByte,1251,0,[mem],-1,[buff],MAX_FILE_SIZE,0,0
 	invoke GlobalFree,[mem]
-	invokex preg_match,tpreg_message2,[mem2],'Выбранный тарифный ',0,0,-1
+	stdcall preg_match,tpreg_message2,[buff],'Выбранный тарифный ',0,0,-1
 	.if eax=1
-		invokex DialogPOPUP,'Тариф успешно изменён!',1
+		stdcall DialogPOPUP,'Тариф успешно изменён!',1
 		mov eax,[tselect]
 		push eax
 		mov eax,[press]
@@ -798,14 +774,13 @@ proc save_tarif hwnd
 	.else
 		invoke GetDlgItem,[hwnd],ID_TSAVE
 		invoke EnableWindow,eax,1
-		invokex preg_match,tpreg_message,[mem2],[post],1,100,-1
+		stdcall preg_match,tpreg_message,[buff],[post],1,100,-1
 		.if eax<>0
-			invokex DialogPOPUP,[post],1
+			stdcall DialogPOPUP,[post],1
 		.else
-			invokex DialogPOPUP,'Неизвестная ошибка!',1
+			stdcall DialogPOPUP,'Неизвестная ошибка!',1
 		.endif
 	.endif
-	invoke GlobalFree,[mem2]
 	invoke GlobalFree,[buff]
 	invoke GlobalFree,[post]
      .exit:
@@ -823,19 +798,19 @@ proc save_tarif hwnd
 	invoke GlobalFree,[token]
 	invoke ExitThread,0
  .err_login:
-	invokex DialogPOPUP,err_connect4,1
+	stdcall DialogPOPUP,err_connect4,1
 	invoke GlobalFree,[buff]
 	invoke GlobalFree,[post]
 	jmp .exit
   .err_connect:
 	invoke GetDlgItem,[hwnd],ID_TSAVE
 	invoke EnableWindow,eax,1
-	invokex DialogPOPUP,err_connect3,1
+	stdcall DialogPOPUP,err_connect3,1
 	invoke GlobalFree,[buff]
 	invoke GlobalFree,[post]
 	jmp .exit
      .err_mem:
-	invokex DialogPOPUP,err_mem1,1
+	stdcall DialogPOPUP,err_mem1,1
 	invoke GlobalFree,[buff]
 	invoke GlobalFree,[post]
 	jmp .exit
@@ -942,7 +917,7 @@ proc days b, money, memory
 		db ' (~%u День)',0
 		@@:
 	.endif
-	invoke wsprintfA,[memory]
+	cinvoke wsprintfA,[memory]
 	ret
 endp
 
@@ -971,7 +946,8 @@ proc getdays cur,mem
 		stdcall days,eax,ecx,[mem2]
 		invoke lstrcatA,[mem],[mem2]
 		invoke GlobalFree,[mem2]
-		mov eax,1
+		xor eax,eax
+		inc eax
 	.else
 		xor eax,eax
 	.endif

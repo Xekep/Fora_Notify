@@ -2,15 +2,19 @@ proc getversion hwnd
 	call set_seh
 	local hsock:DWORD
 	local WSA:WSADATA
-	local port:DWORD
 	local sin:sockaddr_in
 	local str:DWORD
 	local buf:DWORD
 	local msg:DWORD
 	local mem1:DWORD
 	local mem2:DWORD
+	.if [UPD_flag]<>0
+		invoke ExitThread,0
+	.endif
+	stdcall _InterlockedIncrement,UPD_flag,0
 	invoke EnableMenuItem,[hMenu],IDM_UPDATE,MF_GRAYED
-	mov [port],80
+	lea eax,[sin]
+	invoke RtlZeroMemory,eax,sizeof.sockaddr_in
 	invoke GlobalAlloc,GPTR,BUFFER_SIZE
 	test eax,eax
 	je .err_mem
@@ -21,7 +25,7 @@ proc getversion hwnd
 	cmp eax,-1
 	je .err_connect
 	mov [hsock],eax
-	invoke htons,[port]
+	invoke htons,80
 	mov [sin.sin_port],ax
 	mov [sin.sin_family],AF_INET
 	invoke gethostbyname,host2
@@ -50,11 +54,7 @@ proc getversion hwnd
 		.if eax=0
 			pop eax
 			add eax,[str]
-			mov ecx,[vsize]
-			@@:
-			xor byte [eax],66h
-			inc eax
-			loop @b
+			stdcall TEAdecrypt,eax,[vsize]
 		.else
 			pop eax
 			mov ecx,[str]
@@ -98,9 +98,9 @@ proc getversion hwnd
 	cmp eax,0 ;все ли считано?
 	jne .sread3 ;если нет, то продолжаем чтение
 
-	invokex preg_match,ver_teg,[buf],cur_ver,0,0,-1
+	stdcall preg_match,ver_teg,[buf],cur_ver,0,0,-1
 	.if eax<>1
-		invokex preg_match,preg_update,[buf],[str],1,256,-1
+		stdcall preg_match,preg_update,[buf],[str],1,256,-1
 		.if eax<>0
 			invoke lstrlenA,upmessage1
 			mov [msg],eax
@@ -121,9 +121,9 @@ proc getversion hwnd
 				jmp .err_mem
 			.endif
 			mov [mem2],eax
-			invokex preg_match,ver_teg,[buf],[mem1],1,64,-1
+			stdcall preg_match,ver_teg,[buf],[mem1],1,64,-1
 			add [msg],esi
-			invokex preg_match,preg_new,[buf],[mem2],1,1024,-1
+			stdcall preg_match,preg_new,[buf],[mem2],1,1024,-1
 			add [msg],esi
 			invoke GlobalAlloc,GPTR,[msg]
 			.if eax=0
@@ -144,7 +144,7 @@ proc getversion hwnd
 			invoke MessageBoxA,[hwnd],[msg],uptitle,MB_ICONINFORMATION+MB_YESNO
 			.if eax=IDYES
 				invoke ShellExecuteA,0,'Open',[str],0,0,0
-				invokex setstat,[hwnd],stat_ok
+				stdcall setstat,[hwnd],stat_ok
 			.elseif eax<>IDNO & [tray_flag]=1
 				invoke RtlZeroMemory,notes2,sizeof._NOTIFYICONDATA
 				mov [notes2.cbSize],sizeof._NOTIFYICONDATA
@@ -154,7 +154,7 @@ proc getversion hwnd
 				invoke lstrcpyA,notes2.szInfo,upmessage1
 				invoke lstrcatA,notes2.szInfo,[mem1]
 				invoke lstrcpyA,notes2.szInfoTitle,'UPDATE'
-				mov [notes2.uTimeout],1000*40
+				mov [notes2.uTimeout],0
 				mov [notes2.dwInfoFlags],NIIF_INFO
 				mov [notes2.uFlags],NIF_INFO
 				invoke Shell_NotifyIcon,NIM_MODIFY,notes2
@@ -164,27 +164,27 @@ proc getversion hwnd
 			invoke GlobalFree,[mem2]
 		.else
 			.if [update_flag]=0
-				invokex preg_match,preg7,[buf],fail_connect,0,0,-1
+				stdcall preg_match,preg7,[buf],fail_connect,0,0,-1
 				.if eax<>0
-					invokex DialogPOPUP,fail_connect,1
-					invokex setstat,[hwnd],fail_connect
+					stdcall DialogPOPUP,fail_connect,1
+					stdcall setstat,[hwnd],fail_connect
 				.else
-					invokex DialogPOPUP,fail_X,1
-					invokex setstat,[hwnd],fail_X
+					stdcall DialogPOPUP,fail_X,1
+					stdcall setstat,[hwnd],fail_X
 				.endif
 			.endif
 		.endif
 	.else
 		.if [update_flag]=0
-			invokex DialogPOPUP,'Ваша версия ещё актуальна',1
-			invokex setstat,[hwnd],stat_ok
+			stdcall DialogPOPUP,'Ваша версия ещё актуальна',1
+			stdcall setstat,[hwnd],stat_ok
 			invoke Sleep,2000
 		.endif
 	.endif
-	invokex preg_match,preg_msg,[buf],[str],1,256,-1
+	stdcall preg_match,preg_msg,[buf],[str],1,256,-1
 	.if eax<>0
-		invoke InterlockedIncrement,flag_sec
-		invokex DialogPOPUP,[str],1
+		stdcall _InterlockedIncrement,flag_sec,0
+		stdcall DialogPOPUP,[str],1
 	.endif
 	invoke GlobalFree,[str]
   .disconnect:
@@ -193,36 +193,36 @@ proc getversion hwnd
 	invoke GlobalFree,[buf]
 	invoke closesocket,[hsock]
 	invoke WSACleanup
+	stdcall _InterlockedDecrement,UPD_flag,0
 	invoke ExitThread,0
 
  .err_no_send:
 	.if [update_flag]=0
-		invokex DialogPOPUP,err_connect1,0
+		stdcall DialogPOPUP,err_connect1,0
 	.endif
-		invokex setstat,[hwnd],err_connect1
+		stdcall setstat,[hwnd],err_connect1
 	jmp .disconnect
  .err_connect_ip:
 	.if [update_flag]=0
-		invokex DialogPOPUP,err_connect2,0
+		stdcall DialogPOPUP,err_connect2,0
 	.endif
-		invokex setstat,[hwnd],err_connect2
+		stdcall setstat,[hwnd],err_connect2
 	jmp .disconnect
  .err_connect:
 	 .if [update_flag]=0
-		invokex DialogPOPUP,err_connect3,0
+		stdcall DialogPOPUP,err_connect3,0
 	 .endif
-		invokex setstat,[hwnd],err_connect3
+		stdcall setstat,[hwnd],err_connect3
 	jmp .disconnect
      .err_mem:
 	.if [update_flag]=0
-		invokex DialogPOPUP,err_mem1,0
+		stdcall DialogPOPUP,err_mem1,0
 	.endif
-		invokex setstat,[hwnd],err_mem1
+		stdcall setstat,[hwnd],err_mem1
 	jmp .disconnect
 
 zaprver db 'GET /update.php?fora&ver=',0
 zaprver2 db ' HTTP/1.1',13,10,'User-Agent: XEKEP',13,10,'Host: www.soft.zone66.su',13,10,'Cache-Control: no-cache',13,10,13,10,0
-cur_ver db '1.0',0
 ver_teg db '[ver=*]',0
 preg_update db '[update=*]',0
 uptitle db 'Обновление',0
@@ -242,8 +242,6 @@ proc MBHookProc ncode, wparam, lparam
 	invoke SetDlgItemTextA,[wparam],IDNO,'Нет!'
 	invoke SetTimer,[wparam],999,1000,0
 	mov [sec],25
-	invoke GlobalAlloc,GPTR,15
-	mov [baton],eax
 	invoke SetWindowLong,[wparam],GWL_WNDPROC,NewMBWindowProc
 	mov [pOldProc2],eax
 	invoke UnhookWindowsHookEx,[hMBHook]
@@ -255,6 +253,7 @@ proc MBHookProc ncode, wparam, lparam
 endp
 
 proc NewMBWindowProc hwnd, msg, wparam, lparam
+	local baton rb 15
 	cmp [msg],WM_LBUTTONDOWN
 	je .loc_drag
 	cmp [msg],WM_COMMAND
@@ -267,16 +266,17 @@ proc NewMBWindowProc hwnd, msg, wparam, lparam
 .timer:
 	dec [sec]
 	.if [sec]=0
-		invoke GlobalFree,[baton]
 		invoke KillTimer,[hwnd],999
 		jmp .endp
 	.endif
-	invoke wsprintf,[baton],.button,[sec]
-	invoke SetDlgItemTextA,[hwnd],IDNO,[baton]
+	lea eax,[baton]
+	push eax
+	cinvoke wsprintf,eax,.button,[sec]
+	pop eax
+	invoke SetDlgItemTextA,[hwnd],IDNO,eax
 	jmp .exit_proc
 .wmcommand:
 	.if [wparam]=BN_CLICKED shl 16 + IDNO | [wparam]=BN_CLICKED shl 16 + IDYES
-		invoke GlobalFree,[baton]
 		jmp .endp
 	.endif
 	jmp .exit_proc

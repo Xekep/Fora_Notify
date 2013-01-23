@@ -1,5 +1,5 @@
 proc DialogPOPUP arg1, arg2
-	invokex getwinfullscr
+	stdcall getwinfullscr
 	.if eax=1
 		ret
 	.endif
@@ -25,6 +25,7 @@ proc POPUP hwnddlg,msg,wparam,lparam
 	local param:DWORD
 	local screen:RECT  ; Размеры экрана
 	local coord:RECT   ; Размеры окна
+	local lptm:TEXTMETRIC
 	push	ebx esi edi
 	cmp	[msg],WM_INITDIALOG
 	je	.wminitdialog
@@ -40,7 +41,15 @@ proc POPUP hwnddlg,msg,wparam,lparam
 	jmp	.finish
 .wminitdialog:
 	invoke	SetDlgItemTextA,[hwnddlg],ID_TEXT,[lparam]
-	;;;
+	invoke GetDlgItem,[hwnddlg],ID_TEXT
+	push eax
+	invoke GetDC,eax
+	push eax
+	lea ecx,[lptm]
+	invoke GetTextMetrics,eax,ecx
+	pop eax
+	pop ecx
+	invoke ReleaseDC,ecx,eax
 	invoke lstrlenA,[lparam]
 	mov ecx,eax
 	mov esi,[lparam]
@@ -67,7 +76,8 @@ proc POPUP hwnddlg,msg,wparam,lparam
 	loop .metka1
 	.if eax>0
 		xor edx,edx
-		mov ebx,13
+		mov ebx,[lptm.tmHeight]
+		sub ebx,[lptm.tmInternalLeading]
 		mul ebx
 		mov [param],eax
 		lea eax,[coord]
@@ -96,7 +106,6 @@ proc POPUP hwnddlg,msg,wparam,lparam
 		pop eax
 		invoke SetWindowPos,eax,HWND_TOP,0,0,[coord.right],[coord.bottom],SWP_NOMOVE
 	.endif
-	;;;
 	; Получить размер рабочей области экрана
 	lea eax,[screen]
 	invoke	SystemParametersInfo,SPI_GETWORKAREA,NULL,eax,FALSE
@@ -143,7 +152,7 @@ proc POPUP hwnddlg,msg,wparam,lparam
 	loop	@b
 
 	.if [flag_sec]=1
-		invoke InterlockedDecrement,flag_sec
+		stdcall _InterlockedDecrement,flag_sec,0
 		mov eax,TIME_POPUP2
 	.else
 		mov eax,TIME_POPUP
