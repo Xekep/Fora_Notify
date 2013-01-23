@@ -1,0 +1,1 @@
+start fora.exe -autorun
