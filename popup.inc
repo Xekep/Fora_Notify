@@ -23,6 +23,8 @@ endp
 
 proc POPUP hwnddlg,msg,wparam,lparam
 	local param:DWORD
+	local screen:RECT  ; Размеры экрана
+	local coord:RECT   ; Размеры окна
 	push	ebx esi edi
 	cmp	[msg],WM_INITDIALOG
 	je	.wminitdialog
@@ -68,7 +70,8 @@ proc POPUP hwnddlg,msg,wparam,lparam
 		mov ebx,13
 		mul ebx
 		mov [param],eax
-		invoke GetWindowRect,[hwnddlg],coord
+		lea eax,[coord]
+		invoke GetWindowRect,[hwnddlg],eax
 		mov eax,[coord.top]
 		sub [coord.bottom],eax
 		mov eax,[coord.left]
@@ -78,14 +81,16 @@ proc POPUP hwnddlg,msg,wparam,lparam
 		invoke SetWindowPos,[hwnddlg],-1,0,0,[coord.right],[coord.bottom],SWP_NOMOVE
 		invoke GetDlgItem,[hwnddlg],ID_TEXT
 		push eax
-		invoke GetClientRect,eax,coord
+		lea ecx,[coord]
+		invoke GetClientRect,eax,ecx
 		mov eax,[param]
 		add [coord.bottom],eax
 		pop eax
 		invoke SetWindowPos,eax,HWND_TOP,0,0,[coord.right],[coord.bottom],SWP_NOMOVE
 		invoke GetDlgItem,[hwnddlg],0
 		push eax
-		invoke GetClientRect,eax,coord
+		lea ecx,[coord]
+		invoke GetClientRect,eax,ecx
 		mov eax,[param]
 		add [coord.bottom],eax
 		pop eax
@@ -93,10 +98,14 @@ proc POPUP hwnddlg,msg,wparam,lparam
 	.endif
 	;;;
 	; Получить размер рабочей области экрана
-	invoke	SystemParametersInfo,SPI_GETWORKAREA,NULL,screen,FALSE
+	lea eax,[screen]
+	invoke	SystemParametersInfo,SPI_GETWORKAREA,NULL,eax,FALSE
 
 	; Получить размер окна
-	invoke	GetClientRect,[hwnddlg],coord
+	lea eax,[coord]
+	invoke	GetClientRect,[hwnddlg],eax
+
+	add [coord.right],4; FIX
 
 	; Вычислить отступ от правой границы экрана
 	mov	eax,[screen.right]
@@ -132,15 +141,16 @@ proc POPUP hwnddlg,msg,wparam,lparam
 	; Восстановить счетчик
 	pop	ecx
 	loop	@b
+
 	.if [flag_sec]=1
 		invoke InterlockedDecrement,flag_sec
 		mov eax,TIME_POPUP2
 	.else
 		mov eax,TIME_POPUP
 	.endif
+
 	; Установить таймер закрытия окна на 2 секунды
 	invoke	SetTimer,[hwnddlg],TIMER_ID,eax,NULL
-
 	jmp	.processed
 .wmcommand:
 	jmp	.processed
@@ -149,6 +159,22 @@ proc POPUP hwnddlg,msg,wparam,lparam
 	cmp	[wparam],TIMER_ID
 	jne	.processed
 .popdown_window:
+	; Получить размер рабочей области экрана
+	lea eax,[screen]
+	invoke	SystemParametersInfo,SPI_GETWORKAREA,NULL,eax,FALSE
+
+	; Получить размер окна
+	lea eax,[coord]
+	invoke	GetClientRect,[hwnddlg],eax
+
+	add [coord.right],6; FIX
+
+	; Вычислить отступ от правой границы экрана
+	mov	eax,[screen.right]
+	sub	eax,[coord.right]
+	dec	eax
+	mov	[screen.right],eax
+
 	; Высота окна
 	mov	ecx,[coord.bottom]
 	; Цикл закрытия окна

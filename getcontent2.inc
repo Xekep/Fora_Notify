@@ -1,35 +1,58 @@
 proc get_content hwnd
 	call set_seh
 	local hsock:DWORD
-	local WSA:WSADATA
+	local WSA:DWORD
 	local port:DWORD
-	local sin:sockaddr_in
+	local sin:DWORD
 	local str:DWORD
 	local buf:DWORD
 	local qmem:DWORD
 	local size:DWORD
+	;;;;; sockaddr_in
+	sin_family equ 0   ;dw
+	sin_port   equ 2   ;dw
+	sin_addr   equ 4   ;dd
+	sin_zero   equ 8   ;db
+	;;;;; WSADATA
+	wVersion       equ 0	;dw
+	wHighVersion   equ 2	;dw
+	szDescription  equ 4	;db
+	szSystemStatus equ 261	;db
+	iMaxSockets    equ 390	;dw
+	iMaxUdpDg      equ 392	;dw
+	_padding_      equ 394	;db
+	lpVendorInfo   equ 396	;dd
+	;;;
 	mov [port],7777
 	invoke GlobalAlloc,GPTR,BUFFER_SIZE
 	test eax,eax
 	je .err_mem
 	mov [buf],eax
-	lea eax,[WSA]
-	invoke WSAStartup,101h,eax
+	invoke GlobalAlloc,GPTR,sizeof.sockaddr_in
+	test eax,eax
+	je .err_mem
+	mov [sin],eax
+	invoke GlobalAlloc,GPTR,sizeof.WSADATA
+	test eax,eax
+	je .err_mem
+	mov [WSA],eax
+	invoke WSAStartup,101h,[WSA]
 	invoke socket,AF_INET,SOCK_STREAM,0
 	cmp eax,-1
 	je .err_connect
 	mov [hsock],eax
 	invoke htons,[port]
-	mov [sin.sin_port],ax
-	mov [sin.sin_family],AF_INET
+	mov esi,[sin]
+	mov word [esi+sin_port],ax
+	mov word [esi+sin_family],AF_INET
 	invoke gethostbyname,host
 	test eax,eax
 	je .err_connect_ip
 	mov eax,[eax+12]	 ;h_addr_list список указателей на IP
 	mov eax,[eax+8] 	   ;берём первый IP
-	mov [sin.sin_addr],eax
-	lea eax,[sin]
-	invoke connect,[hsock],eax,sizeof.sockaddr_in
+	mov esi,[sin]
+	mov dword [esi+sin_addr],eax
+	invoke connect,[hsock],[sin],sizeof.sockaddr_in
 	test eax,eax
 	jne .err_connect
 	invoke lstrlenA,[buff_login]
@@ -169,6 +192,8 @@ proc get_content hwnd
 	invoke closesocket,[hsock]
 	invoke WSACleanup
 	invoke GlobalFree,[qmem]
+	invoke GlobalFree,[WSA]
+	invoke GlobalFree,[sin]
 	invoke GetDlgItem,[hwnd],ID_GET
 	invoke EnableWindow,eax,1
 	invoke GetDlgItem,[hwnd],ID_LOGIN

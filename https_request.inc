@@ -13,6 +13,7 @@ SECURITY_FLAG_IGNORE_REVOCATION  = 00000080h
 ERROR_INTERNET_INVALID_CA = 12045
 ERROR_INTERNET_SEC_CERT_REV_FAILED  = 12057
 
+
 proc request buff,host,reqstring,useragent,method,post,buff_leng,ssl
 	local ihandle:DWORD
 	local hserver:DWORD
@@ -20,12 +21,6 @@ proc request buff,host,reqstring,useragent,method,post,buff_leng,ssl
 	local flags:DWORD
 	local leng:DWORD
 	local readed:DWORD
-	invoke GlobalAlloc,GPTR,64
-	test eax,eax
-	je .err_connect
-	mov [flags],eax
-	add eax,4
-	mov [leng],eax
 	invoke InternetOpenA,[useragent],INTERNET_OPEN_TYPE_PRECONFIG,0,0,0
 	test eax,eax
 	je .err_connect
@@ -48,13 +43,15 @@ proc request buff,host,reqstring,useragent,method,post,buff_leng,ssl
 	test eax,eax
 	je .err_connect
 	mov [hpage],eax
-	mov eax,[leng]
-	mov dword [eax],4
-	invoke InternetQueryOptionA,[hpage],INTERNET_OPTION_SECURITY_FLAGS,[flags],[leng]
+	mov [leng],4
+	mov [flags],0
+	lea eax,[leng]
+	lea ecx,[flags]
+	invoke InternetQueryOptionA,[hpage],INTERNET_OPTION_SECURITY_FLAGS,ecx,eax
 	test eax,eax
 	je .err_connect
-	mov eax,[flags]
-	add dword [eax],SECURITY_FLAG_IGNORE_UNKNOWN_CA or SECURITY_FLAG_IGNORE_REVOCATION
+	add [flags],SECURITY_FLAG_IGNORE_UNKNOWN_CA or SECURITY_FLAG_IGNORE_REVOCATION
+	lea eax,[flags]
 	invoke InternetSetOptionA,[hpage],INTERNET_OPTION_SECURITY_FLAGS,eax,4
 	invoke lstrlenA,.content_type
 	mov esi,eax
@@ -69,25 +66,25 @@ proc request buff,host,reqstring,useragent,method,post,buff_leng,ssl
 	invoke HttpSendRequestA,[hpage],.content_type,esi,ecx,eax
 	test eax,eax
 	je .err_connect
-	mov edi,[buff]
 	mov [readed],0
-      .read:
+      @@:
+	mov edi,[buff]
 	mov eax,[buff_leng]
 	dec eax
 	sub eax,[readed]
 	add edi,[readed]
-	invoke InternetReadFile,[hpage],edi,eax,[leng]
-	.if dword [leng]<>0 | eax<>FALSE
-		mov eax,[leng]
-		add [readed],eax
+	lea ecx,[leng]
+	invoke InternetReadFile,[hpage],edi,eax,ecx
+	mov ecx,[leng]
+	.if ecx<>0 & eax<>FALSE
+		add [readed],ecx
 		mov eax,[buff_leng]
 		.if [readed]<eax
-			jmp .read
+			jmp @b
 		.endif
 	.endif
 	mov esi,1
     .disconnect:
-	invoke GlobalFree,[flags]
 	invoke InternetCloseHandle,[hpage]
 	invoke InternetCloseHandle,[ihandle]
 	mov eax,esi

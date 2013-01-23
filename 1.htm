@@ -1,0 +1,1805 @@
+<?xml version="1.0" encoding="windows-1251"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="ru" lang="ru">
+
+<head>
+  <title>FORATEC :: Центр подключений</title>
+
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+  <meta name="description" content="Standart"/>
+  <meta name="keywords" content="Standart"/>
+  <meta http-equiv="X-UA-Compatible" content="IE=7" />
+
+  <link type="text/css" rel="stylesheet" href="/stylesheets/common.css" media="all"/>
+  <link type="text/css" rel="stylesheet" href="/stylesheets/main.css" media="screen"/>
+  <link type="text/css" rel="stylesheet" href="/stylesheets/custom.css" media="screen"/>
+
+  <script type="text/javascript" src="/js/jquery.js"></script>
+  <script type="text/javascript" src="/js/main.js"></script>
+  <script type="text/javascript" src="/js/select.js"></script>
+
+  <script language="JavaScript" type="text/javascript">
+    <!--
+    //v1.7
+    // Flash Player Version Detection
+    // Detect Client Browser type
+    // Copyright 2005-2008 Adobe Systems Incorporated.  All rights reserved.
+    var isIE = (navigator.appVersion.indexOf("MSIE") != -1) ? true : false;
+    var isWin = (navigator.appVersion.toLowerCase().indexOf("win") != -1) ? true : false;
+    var isOpera = (navigator.userAgent.indexOf("Opera") != -1) ? true : false;
+    function ControlVersion()
+    {
+        var version;
+        var axo;
+        var e;
+        // NOTE : new ActiveXObject(strFoo) throws an exception if strFoo isn't in the registry
+        try {
+            // version will be set for 7.X or greater players
+            axo = new ActiveXObject("ShockwaveFlash.ShockwaveFlash.7");
+            version = axo.GetVariable("$version");
+        } catch (e) {
+        }
+        if (!version)
+        {
+            try {
+                // version will be set for 6.X players only
+                axo = new ActiveXObject("ShockwaveFlash.ShockwaveFlash.6");
+
+                // installed player is some revision of 6.0
+                // GetVariable("$version") crashes for versions 6.0.22 through 6.0.29,
+                // so we have to be careful.
+
+                // default to the first public version
+                version = "WIN 6,0,21,0";
+                // throws if AllowScripAccess does not exist (introduced in 6.0r47)
+                axo.AllowScriptAccess = "always";
+                // safe to call for 6.0r47 or greater
+                version = axo.GetVariable("$version");
+            } catch (e) {
+            }
+        }
+        if (!version)
+        {
+            try {
+                // version will be set for 4.X or 5.X player
+                axo = new ActiveXObject("ShockwaveFlash.ShockwaveFlash.3");
+                version = axo.GetVariable("$version");
+            } catch (e) {
+            }
+        }
+        if (!version)
+        {
+            try {
+                // version will be set for 3.X player
+                axo = new ActiveXObject("ShockwaveFlash.ShockwaveFlash.3");
+                version = "WIN 3,0,18,0";
+            } catch (e) {
+            }
+        }
+        if (!version)
+        {
+            try {
+                // version will be set for 2.X player
+                axo = new ActiveXObject("ShockwaveFlash.ShockwaveFlash");
+                version = "WIN 2,0,0,11";
+            } catch (e) {
+                version = -1;
+            }
+        }
+
+        return version;
+    }
+    // JavaScript helper required to detect Flash Player PlugIn version information
+    function GetSwfVer() {
+        // NS/Opera version >= 3 check for Flash plugin in plugin array
+        var flashVer = -1;
+
+        if (navigator.plugins != null && navigator.plugins.length > 0) {
+            if (navigator.plugins["Shockwave Flash 2.0"] || navigator.plugins["Shockwave Flash"]) {
+                var swVer2 = navigator.plugins["Shockwave Flash 2.0"] ? " 2.0" : "";
+                var flashDescription = navigator.plugins["Shockwave Flash" + swVer2].description;
+                var descArray = flashDescription.split(" ");
+                var tempArrayMajor = descArray[2].split(".");
+                var versionMajor = tempArrayMajor[0];
+                var versionMinor = tempArrayMajor[1];
+                var versionRevision = descArray[3];
+                if (versionRevision == "") {
+                    versionRevision = descArray[4];
+                }
+                if (versionRevision[0] == "d") {
+                    versionRevision = versionRevision.substring(1);
+                } else if (versionRevision[0] == "r") {
+                    versionRevision = versionRevision.substring(1);
+                    if (versionRevision.indexOf("d") > 0) {
+                        versionRevision = versionRevision.substring(0, versionRevision.indexOf("d"));
+                    }
+                }
+                var flashVer = versionMajor + "." + versionMinor + "." + versionRevision;
+            }
+        }
+        // MSN/WebTV 2.6 supports Flash 4
+        else if (navigator.userAgent.toLowerCase().indexOf("webtv/2.6") != -1) flashVer = 4;
+        // WebTV 2.5 supports Flash 3
+        else if (navigator.userAgent.toLowerCase().indexOf("webtv/2.5") != -1) flashVer = 3;
+        // older WebTV supports Flash 2
+        else if (navigator.userAgent.toLowerCase().indexOf("webtv") != -1) flashVer = 2;
+        else if (isIE && isWin && !isOpera) {
+            flashVer = ControlVersion();
+        }
+        return flashVer;
+    }
+    // When called with reqMajorVer, reqMinorVer, reqRevision returns true if that version or greater is available
+    function DetectFlashVer(reqMajorVer, reqMinorVer, reqRevision)
+    {
+        versionStr = GetSwfVer();
+        if (versionStr == -1) {
+            return false;
+        } else if (versionStr != 0) {
+            if (isIE && isWin && !isOpera) {
+                // Given "WIN 2,0,0,11"
+                tempArray = versionStr.split(" "); 	// ["WIN", "2,0,0,11"]
+                tempString = tempArray[1];			// "2,0,0,11"
+                versionArray = tempString.split(",");	// ['2', '0', '0', '11']
+            } else {
+                versionArray = versionStr.split(".");
+            }
+            var versionMajor = versionArray[0];
+            var versionMinor = versionArray[1];
+            var versionRevision = versionArray[2];
+            // is the major.revision >= requested major.revision AND the minor version >= requested minor
+            if (versionMajor > parseFloat(reqMajorVer)) {
+                return true;
+            } else if (versionMajor == parseFloat(reqMajorVer)) {
+                if (versionMinor > parseFloat(reqMinorVer))
+                    return true;
+                else if (versionMinor == parseFloat(reqMinorVer)) {
+                    if (versionRevision >= parseFloat(reqRevision))
+                        return true;
+                }
+            }
+            return false;
+        }
+    }
+    function AC_AddExtension(src, ext)
+    {
+        if (src.indexOf('?') != -1)
+            return src.replace(/\?/, ext + '?');
+        else
+            return src + ext;
+    }
+    function AC_Generateobj(objAttrs, params, embedAttrs)
+    {
+        var str = '';
+        if (isIE && isWin && !isOpera)
+        {
+            str += '<object ';
+            for (var i in objAttrs)
+            {
+                str += i + '="' + objAttrs[i] + '" ';
+            }
+            str += '>';
+            for (var i in params)
+            {
+                str += '<param name="' + i + '" value="' + params[i] + '" /> ';
+            }
+            str += '</object>';
+        }
+        else
+        {
+            str += '<embed ';
+            for (var i in embedAttrs)
+            {
+                str += i + '="' + embedAttrs[i] + '" ';
+            }
+            str += '> </embed>';
+        }
+        document.write(str);
+    }
+    function AC_FL_RunContent() {
+        var ret =
+                AC_GetArgs
+                        (arguments, ".swf", "movie", "clsid:d27cdb6e-ae6d-11cf-96b8-444553540000"
+                                , "application/x-shockwave-flash"
+                                );
+        AC_Generateobj(ret.objAttrs, ret.params, ret.embedAttrs);
+    }
+    function AC_SW_RunContent() {
+        var ret =
+                AC_GetArgs
+                        (arguments, ".dcr", "src", "clsid:166B1BCA-3F9C-11CF-8075-444553540000"
+                                , null
+                                );
+        AC_Generateobj(ret.objAttrs, ret.params, ret.embedAttrs);
+    }
+    function AC_GetArgs(args, ext, srcParamName, classid, mimeType) {
+        var ret = new Object();
+        ret.embedAttrs = new Object();
+        ret.params = new Object();
+        ret.objAttrs = new Object();
+        for (var i = 0; i < args.length; i = i + 2) {
+            var currArg = args[i].toLowerCase();
+            switch (currArg) {
+                case "classid":
+                    break;
+                case "pluginspage":
+                    ret.embedAttrs[args[i]] = args[i + 1];
+                    break;
+                case "src":
+                case "movie":
+                    args[i + 1] = AC_AddExtension(args[i + 1], ext);
+                    ret.embedAttrs["src"] = args[i + 1];
+                    ret.params[srcParamName] = args[i + 1];
+                    break;
+                case "onafterupdate":
+                case "onbeforeupdate":
+                case "onblur":
+                case "oncellchange":
+                case "onclick":
+                case "ondblclick":
+                case "ondrag":
+                case "ondragend":
+                case "ondragenter":
+                case "ondragleave":
+                case "ondragover":
+                case "ondrop":
+                case "onfinish":
+                case "onfocus":
+                case "onhelp":
+                case "onmousedown":
+                case "onmouseup":
+                case "onmouseover":
+                case "onmousemove":
+                case "onmouseout":
+                case "onkeypress":
+                case "onkeydown":
+                case "onkeyup":
+                case "onload":
+                case "onlosecapture":
+                case "onpropertychange":
+                case "onreadystatechange":
+                case "onrowsdelete":
+                case "onrowenter":
+                case "onrowexit":
+                case "onrowsinserted":
+                case "onstart":
+                case "onscroll":
+                case "onbeforeeditfocus":
+                case "onactivate":
+                case "onbeforedeactivate":
+                case "ondeactivate":
+                case "type":
+                case "codebase":
+                case "id":
+                    ret.objAttrs[args[i]] = args[i + 1];
+                    break;
+                case "width":
+                case "height":
+                case "align":
+                case "vspace":
+                case "hspace":
+                case "class":
+                case "title":
+                case "accesskey":
+                case "name":
+                case "tabindex":
+                    ret.embedAttrs[args[i]] = ret.objAttrs[args[i]] = args[i + 1];
+                    break;
+                default:
+                    ret.embedAttrs[args[i]] = ret.params[args[i]] = args[i + 1];
+            }
+        }
+        ret.objAttrs["classid"] = classid;
+        if (mimeType) ret.embedAttrs["type"] = mimeType;
+        return ret;
+    }
+    // -->
+</script>
+</head>
+
+
+<body>
+<div class="main block">
+  <div class="submain">
+
+    <div class="top-l fl">
+      <a href="/" onfocus="this.blur()"><img src="../images/logo.gif" alt="Foratec" title="Foratec" class="logo"/></a>
+      <ul class="menu al">
+  <li><a href="/session/new" onfocus="this.blur()">Клиентам</a></li>
+  <li class="active-"><span>Новости</span></li>
+  <li><a href="/tariff/broadband_ekb" onfocus="this.blur()">Тарифы</a></li>
+  <li><a href="/foracard/stat" onfocus="this.blur()">Карта ФОРА</a></li>
+  <li><a href="http://stat.fora.su" onfocus="this.blur()">Личный кабинет</a></li>
+  <li><a href="/site/about" onfocus="this.blur()">О компании</a></li>
+  <li><a href="/site/contacts" onfocus="this.blur()">Контакты</a></li>
+  <li><a href="http://foratec-com.ru/forum" onfocus="this.blur()">Форум</a></li>
+</ul>
+    </div>
+
+    <div class="top-r">
+      <div class="top">
+
+
+  <div class="f-p2p fr">
+<!--
+    <a href="http://www.beeline.ru" onfocus="this.blur()"><img src="../images/logo_beeline.png" alt="Билайн" title="Билайн" /></a>
+-->    
+<!--
+    <a href="http://foratec-com.ru/forum" onfocus="this.blur()">Форум</a>
+-->
+    <div class="clear"></div>
+<!--
+    <a href="" onfocus="this.blur()" class="p2p fl">P2P<span class="lto"></span><span class="rto"></span><span class="lbo"></span><span class="rbo"></span></a>
+-->
+  </div>
+
+
+  <div class="teh-contact fr">
+    <div class="this-header fl ar">
+      <!-- <a href="" onfocus="this.blur()">Техподдержка<br/>круглосуточно:</a> -->
+      <span>Техподдержка<br/>круглосуточно:</span>
+    </div>
+    <div class="red fl">
+      г. Екатеринбург: <br/>
+      +7 (343) 345-21-21
+    </div>
+    <div class="dblue fl">
+      г.Тюмень: <br/>
+      +7 (3452) 53-22-33
+    </div>
+    <div class="orange fl">
+      г. Нижний Тагил: <br/>
+      +7 (3435) 49-99-33
+    </div>
+    <div class="blue fl">
+      г. Новоуральск: <br/>
+      +7 (34370) 5-83-46
+    </div>
+  </div>
+
+  <div class="services al fl">
+    <a href="http://fora.su" onfocus="this.blur()" class="ico-home">на главную</a><br/>
+    <a href="mailto:helpdesk@foratec-com.ru" onfocus="this.blur()" class="ico-mail">написать письмо</a><br/>
+    <a href="http://www.foratec-com.ru" onfocus="this.blur()" class="ico-map">для корпоративных клиентов</a>
+  </div>
+
+  <!--
+  <div class="services al fl">
+    <a href="" onfocus="this.blur()" class="ico-map">карта сайта</a><br/>
+    <a href="" onfocus="this.blur()" class="ico-print">версия для печати</a>
+  </div>
+   -->
+  
+</div>
+      <div class="fr blocks">
+        <div class="red-block">
+  <div class="bred">
+    <div class="">
+      Личный кабинет
+    </div>
+    <form action="https://stat.fora.su/session" method="POST">
+      <table cellpadding="0" cellspacing="0" class="al">
+        <tr>
+          <td class="ar">
+            Логин:
+          </td>
+          <td>
+            <input name="login" class="type-text"/>
+          </td>
+        </tr>
+        <tr>
+          <td class="ar">
+            Пароль:
+          </td>
+          <td>
+            <input name="password" class="type-text" type="password"/>
+          </td>
+        </tr>
+        <tr>
+          <td>
+          </td>
+          <td>
+            <input type="submit" value="вход" class="type-button"/>
+          </td>
+        </tr>
+      </table>
+    </form>
+  </div>
+</div>
+        <div class="blue-block">
+  <div class="bblue">
+    <div class="">
+      Электронная почта
+    </div>
+    <form action="http://webmail.fora.su" method="POST">
+      <table cellpadding="0" cellspacing="0" class="al">
+        <tr>
+          <td class="ar">
+            Логин:
+          </td>
+          <td>
+            <input name="_user" class="type-text"/>
+          </td>
+        </tr>
+        <tr>
+          <td class="ar">
+            Пароль:
+          </td>
+          <td>
+            <input name="_pass" type="password" class="type-text"/>
+          </td>
+        </tr>
+        <tr>
+          <td>
+          </td>
+          <td>
+            <input type="submit" value="вход" class="type-button"/>
+          </td>
+        </tr>
+      </table>
+
+      <input type="hidden" name="_token" value="b9b4335b5a96292aaf976629f0704c9f" />
+      <input type="hidden" name="_action" value="login" />
+      <input type="hidden" name="_timezone" id="rcmlogintz" value="_default_" />
+      <input type="hidden" name="_url" id="rcmloginurl" />
+      
+    </form>
+  </div>
+</div>
+      </div>
+      <div class="dop-menu">
+  <a href="/registration/new" onfocus="this.blur()" class="p2p fl">Подключиться<span class="lto"></span><span class="rto"></span></a>
+  <a href="/site/offer" onfocus="this.blur()" class="p2p fl">Договор оферты<span class="lto"></span><span class="rto"></span></a>
+  <a href="/site/pay_sites" onfocus="this.blur()" class="p2p fl">Места оплаты<span class="lto"></span><span class="rto"></span></a>
+</div>
+      <div class="banner al">
+   <a href="/tariff/broadband_kompr"><img alt="banner" src="../images/banner_girl.png" ></a>
+</div>
+    </div>
+    <div class="clear"></div>
+
+    <div class="center-top"><span class="lt"></span><span class="rt"></span></div>
+
+    <div class="center">
+      <div class="left">
+        
+        <dl class="news">
+
+  
+      <dt>
+        <a href="/news/96" onfocus="this.blur()">01 октября 2010 года</a>
+      </dt>
+      <dd>
+        Оплачивать услуги ЗАО &quot;Форатек Коммуникейшн&quot; в г. Полевской стало удобнее. Теперь вы можете произвести оплату в офисах СКБ-банка. Зачисление - моментально!
+
+        <a href="/news/96" onfocus="this.blur()">...</a>
+      </dd>
+  
+      <dt>
+        <a href="/news/92" onfocus="this.blur()">20 сентября 2010 года</a>
+      </dt>
+      <dd>
+        В связи с объединением ЗАО «Форатек Коммуникейшн» со своим стратегическим партнером ОАО «ВымпелКом», мы начинаем предоставлять услуги МГМН связи от  ЗАО «СЦС Совинтел». 
+        <a href="/news/92" onfocus="this.blur()">...</a>
+      </dd>
+  
+      <dt>
+        <a href="/news/86" onfocus="this.blur()">07 сентября 2010 года</a>
+      </dt>
+      <dd>
+        Уважаемые абоненты! 
+
+Информируем вас о том, что ЗАО «ФОРАТЕК КОММУНИКЕЙШН» начало процесс реорганизации путем присоединения к ОАО &quot;ВымпелКом&quot; (торговая марка &quot;Билайн&quot;). Реорганизация осуществляется с целью юридического оформления единого интегрированного оператора связи и упрощения корпоративной структуры группы компаний. 
+        <a href="/news/86" onfocus="this.blur()">...</a>
+      </dd>
+  
+
+  <dd class="ar">
+    <a href="/news" onfocus="this.blur()">Архив новостей</a>
+  </dd>
+</dl>
+        <a  class="gis" href="http://www.2gis.ru" onfocus="this.blur()"><img src="../images/gis.gif" alt="ДубльГИС" title="ДубльГИС"/></a>
+      </div>
+
+      <div class="center-in">
+        <div class="center-inner">
+          <div class="content-block">
+            
+            
+            <h1 class="main-header">Наши новости</h1>
+            <div class="content">
+              
+
+    <h2 class="news-h2">
+      <a onfocus="this.blur()" href="">Новые способы оплаты услуг для абонентов в г. Полевской</a> <span>(01.10.2010)</span>
+    </h2>
+
+    <p>
+      Уважаемые абоненты! Доводим до вашего сведения, что с сентября 2010 года вы можете оплатить услуги ЗАО "Форатек Коммуникейшн" в офисах СКБ-банка. 
+При оплате через офисы СКБ-банка денежные средства зачисляются на  Ваш лицевой счет моментально.
+Двери офиса "Полевской" (ул. Вершинина, 7) открыты для клиентов с понедельника по пятницу с 9.00 до 18.00, без перерыва. 
+Офис "Северский" (ул. Ленина, 12) открыт в будние дни с 9.00 до 19.00, а в субботу и воскресенье с  10.00 до 16.00, без перерыва. 
+Любые интересующие вас вопросы вы можете задать по телефону круглосуточного Контакт-центра СКБ-банка 8-800-1000-600 (звонок бесплатный).
+
+
+    </p>
+
+    <p>&nbsp;</p>
+
+
+    <h2 class="news-h2">
+      <a onfocus="this.blur()" href="">Общайтесь с родными и близкими гораздо больше, гораздо дешевле! </a> <span>(20.09.2010)</span>
+    </h2>
+
+    <p>
+      <b>Уважаемые Клиенты</b>, 
+<p><b>В связи с объединением ЗАО «Форатек Коммуникейшн» со своим стратегическим партнером ОАО «ВымпелКом», мы начинаем предоставлять услуги МГМН связи от  ЗАО «СЦС Совинтел». Информируем  Вас о том, что с 01.10.2010 г. будет произведен перевод на тарифы МГМН связи ЗАО «СЦС Совинтел».</b></p>
+
+<p>Переход на услуги МГМН связи от ЗАО «СЦС Совинтел» обеспечит не только более качественную и надежную связь, но и позволит Вам значительно сократить  расходы на МГМН переговоры. 
+
+<p>Теперь вызовы в Москву и Санкт-Петербург обойдутся Вам в 2,70 руб./мин. вместо 4,50    руб./мин.;</p>
+
+<p>в Челябинск и Тюмень 2,70 руб./мин. вместо 2,80 руб./мин.;</p>
+
+<p>в Беларусь 12,50 руб./мин. вместо 15,00 руб./мин.;</p>
+
+<p>в Украину 5,60 руб./мин.  вместо 8,40 руб./мин.</p>
+
+<p>Общайтесь с родными и близкими гораздо больше, гораздо дешевле!</p> 
+
+    </p>
+
+    <p>&nbsp;</p>
+
+
+    <h2 class="news-h2">
+      <a onfocus="this.blur()" href="">Реорганизация ЗАО &quot;Форатек Коммуникейшн&quot; путём присоединения к ОАО &quot;Вымпелком&quot; (торговая марка &quot;Билайн&quot;)</a> <span>(07.09.2010)</span>
+    </h2>
+
+    <p>
+      <b>Уважаемые абоненты!</p> 
+<p>Информируем вас о том, что ЗАО «ФОРАТЕК КОММУНИКЕЙШН» начало процесс реорганизации путем присоединения к ОАО "ВымпелКом" (торговая марка "Билайн").</b> <p>Реорганизация осуществляется с целью юридического оформления единого интегрированного оператора связи и упрощения корпоративной структуры группы компаний.</p>
+<p>После завершения реорганизации к ОАО «ВымпелКом» присоединятся следующие дочерние общества:</p>
+<p>1. Закрытое акционерное общество «СЦС Совинтел» (г.Москва)</p>
+<p>2. Закрытое акционерное общество «Инвестэлектросвязь» (г.Москва)</p>
+<p>3. Закрытое акционерное общество «Коминком-Черноземье» (г.Воронеж)</p>
+<p>4. Закрытое акционерное общество «Брянсктел» (г.Брянск)</p>
+<p>5. Закрытое акционерное общество «Татарстанские интеллектуальные коммуникации» (г.Казань)</p>
+<p>6. Закрытое акционерное общество «Компания ТелеКом-Самара» (г.Самара)</p>
+<p>7. Закрытое акционерное общество «Компания ТелеКом-Кубаньэлектросвязь» (г.Краснодар)</p>
+<p>8. Закрытое акционерное общество «Комтел» (г.Тюмень)</p>
+<p>9. Закрытое акционерное общество «Агентство телекоммуникаций» (г.Пермь)</p>
+<p>10. Закрытое акционерное общество «СОЧИТЕЛЕКОМ» (г.Сочи)</p>
+<p><b>11. Закрытое акционерное общество «ФОРАТЕК КОММУНИКЕЙШН» (г.Екатеринбург).</b></p>
+
+<p>ОАО «ВымпелКом» станет правопреемником по всем правам и обязательствам всех присоединяемых дочерних обществ, и будет исполнять все обязательства, принятые ранее дочерними обществами, от собственного имени. </p>
+<p>Условия предоставления услуг связи не изменяются.</p>
+
+<p><a href='http://foratec-com.ru/org_message.JPG'>Полный текст юридического уведомления о реорганизации.</a> </p>
+
+
+
+    </p>
+
+    <p>&nbsp;</p>
+
+
+    <h2 class="news-h2">
+      <a onfocus="this.blur()" href="">Зона покрытия сети FORATEC теперь на карте Екатеринбурга в электронном справочнике ДубльГИС</a> <span>(11.08.2010)</span>
+    </h2>
+
+    <p>
+      С августа 2010 года сеть FORATEC и компания "ДубльГИС" начали совместную работу по составлению карты покрытия сети Интернет в справочнике.<br>
+Сейчас, подключая слой справочника "Компьютерные сети" и выбирая любой дом, вы можете видеть, осуществляет ли компания FORATEC в нем подключение к сети Интернет. Карта покрытия сети обновляется раз в месяц и поэтому всегда актуальна.
+<br>На сегодняшний день справочником ДубльГИС пользуются более 5 500 000 пользователей в 29 городах России и Украины! Справочник выпускается в трех вариантах: для настольных и карманных компьютеров, а также в виде онлайн-версии, доступной по адресу <a href='http://map.2gis.ru'>http://map.2gis.ru</a>. Все версии бесплатны для пользователей!
+
+<br><br>Скачать справочник "ДубльГИС" вы можете на сайте www.2gis.ru  
+Загрузить справочник "ДубльГИС" можно через программу Центр Обновлений. ЦО можно скачать <a href='http://help.2gis.ru/center/'>здесь</a>.
+    </p>
+
+    <p>&nbsp;</p>
+
+
+    <h2 class="news-h2">
+      <a onfocus="this.blur()" href="">Успевай! Подключись к скоростному Интернету БЕСПЛАТНО!</a> <span>(29.07.2010)</span>
+    </h2>
+
+    <p>
+      С 01.08.10 по 30.09.10 подключайся к скоростному Интернету БЕСПЛАТНО! Выбирай свой тариф! Безлимитные тарифные планы «Включайся» и «Включайся +» со скоростью до 8 Мбит/с! 
+
+ <html xmlns:v="urn:schemas-microsoft-com:vml"
+xmlns:o="urn:schemas-microsoft-com:office:office"
+xmlns:w="urn:schemas-microsoft-com:office:word"
+xmlns:m="http://schemas.microsoft.com/office/2004/12/omml"
+xmlns="http://www.w3.org/TR/REC-html40">
+
+<head>
+<meta http-equiv=Content-Type content="text/html; charset=windows-1251">
+<meta name=ProgId content=Word.Document>
+<meta name=Generator content="Microsoft Word 12">
+<meta name=Originator content="Microsoft Word 12">
+<link rel=File-List href="табл.акция%20Св.обл.files/filelist.xml">
+<!--[if gte mso 9]><xml>
+ <o:DocumentProperties>
+  <o:Author>a.shishova</o:Author>
+  <o:LastAuthor>a.shishova</o:LastAuthor>
+  <o:Revision>2</o:Revision>
+  <o:TotalTime>7</o:TotalTime>
+  <o:Created>2010-08-19T11:31:00Z</o:Created>
+  <o:LastSaved>2010-08-19T11:31:00Z</o:LastSaved>
+  <o:Pages>1</o:Pages>
+  <o:Words>80</o:Words>
+  <o:Characters>460</o:Characters>
+  <o:Company>Foratec Communication</o:Company>
+  <o:Lines>3</o:Lines>
+  <o:Paragraphs>1</o:Paragraphs>
+  <o:CharactersWithSpaces>539</o:CharactersWithSpaces>
+  <o:Version>12.00</o:Version>
+ </o:DocumentProperties>
+</xml><![endif]-->
+<link rel=themeData href="табл.акция%20Св.обл.files/themedata.thmx">
+<link rel=colorSchemeMapping
+href="табл.акция%20Св.обл.files/colorschememapping.xml">
+<!--[if gte mso 9]><xml>
+ <w:WordDocument>
+  <w:SpellingState>Clean</w:SpellingState>
+  <w:GrammarState>Clean</w:GrammarState>
+  <w:TrackMoves>false</w:TrackMoves>
+  <w:TrackFormatting/>
+  <w:PunctuationKerning/>
+  <w:ValidateAgainstSchemas/>
+  <w:SaveIfXMLInvalid>false</w:SaveIfXMLInvalid>
+  <w:IgnoreMixedContent>false</w:IgnoreMixedContent>
+  <w:AlwaysShowPlaceholderText>false</w:AlwaysShowPlaceholderText>
+  <w:DoNotPromoteQF/>
+  <w:LidThemeOther>RU</w:LidThemeOther>
+  <w:LidThemeAsian>X-NONE</w:LidThemeAsian>
+  <w:LidThemeComplexScript>X-NONE</w:LidThemeComplexScript>
+  <w:Compatibility>
+   <w:BreakWrappedTables/>
+   <w:SnapToGridInCell/>
+   <w:WrapTextWithPunct/>
+   <w:UseAsianBreakRules/>
+   <w:DontGrowAutofit/>
+   <w:SplitPgBreakAndParaMark/>
+   <w:DontVertAlignCellWithSp/>
+   <w:DontBreakConstrainedForcedTables/>
+   <w:DontVertAlignInTxbx/>
+   <w:Word11KerningPairs/>
+   <w:CachedColBalance/>
+  </w:Compatibility>
+  <m:mathPr>
+   <m:mathFont m:val="Cambria Math"/>
+   <m:brkBin m:val="before"/>
+   <m:brkBinSub m:val="&#45;-"/>
+   <m:smallFrac m:val="off"/>
+   <m:dispDef/>
+   <m:lMargin m:val="0"/>
+   <m:rMargin m:val="0"/>
+   <m:defJc m:val="centerGroup"/>
+   <m:wrapIndent m:val="1440"/>
+   <m:intLim m:val="subSup"/>
+   <m:naryLim m:val="undOvr"/>
+  </m:mathPr></w:WordDocument>
+</xml><![endif]--><!--[if gte mso 9]><xml>
+ <w:LatentStyles DefLockedState="false" DefUnhideWhenUsed="true"
+  DefSemiHidden="true" DefQFormat="false" DefPriority="99"
+  LatentStyleCount="267">
+  <w:LsdException Locked="false" Priority="0" SemiHidden="false"
+   UnhideWhenUsed="false" QFormat="true" Name="Normal"/>
+  <w:LsdException Locked="false" Priority="9" SemiHidden="false"
+   UnhideWhenUsed="false" QFormat="true" Name="heading 1"/>
+  <w:LsdException Locked="false" Priority="9" QFormat="true" Name="heading 2"/>
+  <w:LsdException Locked="false" Priority="9" QFormat="true" Name="heading 3"/>
+  <w:LsdException Locked="false" Priority="9" QFormat="true" Name="heading 4"/>
+  <w:LsdException Locked="false" Priority="9" QFormat="true" Name="heading 5"/>
+  <w:LsdException Locked="false" Priority="9" QFormat="true" Name="heading 6"/>
+  <w:LsdException Locked="false" Priority="9" QFormat="true" Name="heading 7"/>
+  <w:LsdException Locked="false" Priority="9" QFormat="true" Name="heading 8"/>
+  <w:LsdException Locked="false" Priority="9" QFormat="true" Name="heading 9"/>
+  <w:LsdException Locked="false" Priority="39" Name="toc 1"/>
+  <w:LsdException Locked="false" Priority="39" Name="toc 2"/>
+  <w:LsdException Locked="false" Priority="39" Name="toc 3"/>
+  <w:LsdException Locked="false" Priority="39" Name="toc 4"/>
+  <w:LsdException Locked="false" Priority="39" Name="toc 5"/>
+  <w:LsdException Locked="false" Priority="39" Name="toc 6"/>
+  <w:LsdException Locked="false" Priority="39" Name="toc 7"/>
+  <w:LsdException Locked="false" Priority="39" Name="toc 8"/>
+  <w:LsdException Locked="false" Priority="39" Name="toc 9"/>
+  <w:LsdException Locked="false" Priority="35" QFormat="true" Name="caption"/>
+  <w:LsdException Locked="false" Priority="10" SemiHidden="false"
+   UnhideWhenUsed="false" QFormat="true" Name="Title"/>
+  <w:LsdException Locked="false" Priority="1" Name="Default Paragraph Font"/>
+  <w:LsdException Locked="false" Priority="11" SemiHidden="false"
+   UnhideWhenUsed="false" QFormat="true" Name="Subtitle"/>
+  <w:LsdException Locked="false" Priority="22" SemiHidden="false"
+   UnhideWhenUsed="false" QFormat="true" Name="Strong"/>
+  <w:LsdException Locked="false" Priority="20" SemiHidden="false"
+   UnhideWhenUsed="false" QFormat="true" Name="Emphasis"/>
+  <w:LsdException Locked="false" Priority="59" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Table Grid"/>
+  <w:LsdException Locked="false" UnhideWhenUsed="false" Name="Placeholder Text"/>
+  <w:LsdException Locked="false" Priority="1" SemiHidden="false"
+   UnhideWhenUsed="false" QFormat="true" Name="No Spacing"/>
+  <w:LsdException Locked="false" Priority="60" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Light Shading"/>
+  <w:LsdException Locked="false" Priority="61" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Light List"/>
+  <w:LsdException Locked="false" Priority="62" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Light Grid"/>
+  <w:LsdException Locked="false" Priority="63" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Medium Shading 1"/>
+  <w:LsdException Locked="false" Priority="64" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Medium Shading 2"/>
+  <w:LsdException Locked="false" Priority="65" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Medium List 1"/>
+  <w:LsdException Locked="false" Priority="66" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Medium List 2"/>
+  <w:LsdException Locked="false" Priority="67" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Medium Grid 1"/>
+  <w:LsdException Locked="false" Priority="68" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Medium Grid 2"/>
+  <w:LsdException Locked="false" Priority="69" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Medium Grid 3"/>
+  <w:LsdException Locked="false" Priority="70" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Dark List"/>
+  <w:LsdException Locked="false" Priority="71" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Colorful Shading"/>
+  <w:LsdException Locked="false" Priority="72" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Colorful List"/>
+  <w:LsdException Locked="false" Priority="73" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Colorful Grid"/>
+  <w:LsdException Locked="false" Priority="60" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Light Shading Accent 1"/>
+  <w:LsdException Locked="false" Priority="61" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Light List Accent 1"/>
+  <w:LsdException Locked="false" Priority="62" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Light Grid Accent 1"/>
+  <w:LsdException Locked="false" Priority="63" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Medium Shading 1 Accent 1"/>
+  <w:LsdException Locked="false" Priority="64" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Medium Shading 2 Accent 1"/>
+  <w:LsdException Locked="false" Priority="65" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Medium List 1 Accent 1"/>
+  <w:LsdException Locked="false" UnhideWhenUsed="false" Name="Revision"/>
+  <w:LsdException Locked="false" Priority="34" SemiHidden="false"
+   UnhideWhenUsed="false" QFormat="true" Name="List Paragraph"/>
+  <w:LsdException Locked="false" Priority="29" SemiHidden="false"
+   UnhideWhenUsed="false" QFormat="true" Name="Quote"/>
+  <w:LsdException Locked="false" Priority="30" SemiHidden="false"
+   UnhideWhenUsed="false" QFormat="true" Name="Intense Quote"/>
+  <w:LsdException Locked="false" Priority="66" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Medium List 2 Accent 1"/>
+  <w:LsdException Locked="false" Priority="67" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Medium Grid 1 Accent 1"/>
+  <w:LsdException Locked="false" Priority="68" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Medium Grid 2 Accent 1"/>
+  <w:LsdException Locked="false" Priority="69" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Medium Grid 3 Accent 1"/>
+  <w:LsdException Locked="false" Priority="70" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Dark List Accent 1"/>
+  <w:LsdException Locked="false" Priority="71" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Colorful Shading Accent 1"/>
+  <w:LsdException Locked="false" Priority="72" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Colorful List Accent 1"/>
+  <w:LsdException Locked="false" Priority="73" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Colorful Grid Accent 1"/>
+  <w:LsdException Locked="false" Priority="60" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Light Shading Accent 2"/>
+  <w:LsdException Locked="false" Priority="61" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Light List Accent 2"/>
+  <w:LsdException Locked="false" Priority="62" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Light Grid Accent 2"/>
+  <w:LsdException Locked="false" Priority="63" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Medium Shading 1 Accent 2"/>
+  <w:LsdException Locked="false" Priority="64" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Medium Shading 2 Accent 2"/>
+  <w:LsdException Locked="false" Priority="65" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Medium List 1 Accent 2"/>
+  <w:LsdException Locked="false" Priority="66" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Medium List 2 Accent 2"/>
+  <w:LsdException Locked="false" Priority="67" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Medium Grid 1 Accent 2"/>
+  <w:LsdException Locked="false" Priority="68" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Medium Grid 2 Accent 2"/>
+  <w:LsdException Locked="false" Priority="69" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Medium Grid 3 Accent 2"/>
+  <w:LsdException Locked="false" Priority="70" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Dark List Accent 2"/>
+  <w:LsdException Locked="false" Priority="71" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Colorful Shading Accent 2"/>
+  <w:LsdException Locked="false" Priority="72" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Colorful List Accent 2"/>
+  <w:LsdException Locked="false" Priority="73" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Colorful Grid Accent 2"/>
+  <w:LsdException Locked="false" Priority="60" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Light Shading Accent 3"/>
+  <w:LsdException Locked="false" Priority="61" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Light List Accent 3"/>
+  <w:LsdException Locked="false" Priority="62" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Light Grid Accent 3"/>
+  <w:LsdException Locked="false" Priority="63" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Medium Shading 1 Accent 3"/>
+  <w:LsdException Locked="false" Priority="64" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Medium Shading 2 Accent 3"/>
+  <w:LsdException Locked="false" Priority="65" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Medium List 1 Accent 3"/>
+  <w:LsdException Locked="false" Priority="66" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Medium List 2 Accent 3"/>
+  <w:LsdException Locked="false" Priority="67" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Medium Grid 1 Accent 3"/>
+  <w:LsdException Locked="false" Priority="68" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Medium Grid 2 Accent 3"/>
+  <w:LsdException Locked="false" Priority="69" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Medium Grid 3 Accent 3"/>
+  <w:LsdException Locked="false" Priority="70" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Dark List Accent 3"/>
+  <w:LsdException Locked="false" Priority="71" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Colorful Shading Accent 3"/>
+  <w:LsdException Locked="false" Priority="72" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Colorful List Accent 3"/>
+  <w:LsdException Locked="false" Priority="73" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Colorful Grid Accent 3"/>
+  <w:LsdException Locked="false" Priority="60" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Light Shading Accent 4"/>
+  <w:LsdException Locked="false" Priority="61" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Light List Accent 4"/>
+  <w:LsdException Locked="false" Priority="62" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Light Grid Accent 4"/>
+  <w:LsdException Locked="false" Priority="63" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Medium Shading 1 Accent 4"/>
+  <w:LsdException Locked="false" Priority="64" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Medium Shading 2 Accent 4"/>
+  <w:LsdException Locked="false" Priority="65" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Medium List 1 Accent 4"/>
+  <w:LsdException Locked="false" Priority="66" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Medium List 2 Accent 4"/>
+  <w:LsdException Locked="false" Priority="67" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Medium Grid 1 Accent 4"/>
+  <w:LsdException Locked="false" Priority="68" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Medium Grid 2 Accent 4"/>
+  <w:LsdException Locked="false" Priority="69" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Medium Grid 3 Accent 4"/>
+  <w:LsdException Locked="false" Priority="70" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Dark List Accent 4"/>
+  <w:LsdException Locked="false" Priority="71" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Colorful Shading Accent 4"/>
+  <w:LsdException Locked="false" Priority="72" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Colorful List Accent 4"/>
+  <w:LsdException Locked="false" Priority="73" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Colorful Grid Accent 4"/>
+  <w:LsdException Locked="false" Priority="60" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Light Shading Accent 5"/>
+  <w:LsdException Locked="false" Priority="61" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Light List Accent 5"/>
+  <w:LsdException Locked="false" Priority="62" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Light Grid Accent 5"/>
+  <w:LsdException Locked="false" Priority="63" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Medium Shading 1 Accent 5"/>
+  <w:LsdException Locked="false" Priority="64" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Medium Shading 2 Accent 5"/>
+  <w:LsdException Locked="false" Priority="65" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Medium List 1 Accent 5"/>
+  <w:LsdException Locked="false" Priority="66" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Medium List 2 Accent 5"/>
+  <w:LsdException Locked="false" Priority="67" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Medium Grid 1 Accent 5"/>
+  <w:LsdException Locked="false" Priority="68" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Medium Grid 2 Accent 5"/>
+  <w:LsdException Locked="false" Priority="69" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Medium Grid 3 Accent 5"/>
+  <w:LsdException Locked="false" Priority="70" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Dark List Accent 5"/>
+  <w:LsdException Locked="false" Priority="71" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Colorful Shading Accent 5"/>
+  <w:LsdException Locked="false" Priority="72" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Colorful List Accent 5"/>
+  <w:LsdException Locked="false" Priority="73" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Colorful Grid Accent 5"/>
+  <w:LsdException Locked="false" Priority="60" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Light Shading Accent 6"/>
+  <w:LsdException Locked="false" Priority="61" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Light List Accent 6"/>
+  <w:LsdException Locked="false" Priority="62" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Light Grid Accent 6"/>
+  <w:LsdException Locked="false" Priority="63" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Medium Shading 1 Accent 6"/>
+  <w:LsdException Locked="false" Priority="64" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Medium Shading 2 Accent 6"/>
+  <w:LsdException Locked="false" Priority="65" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Medium List 1 Accent 6"/>
+  <w:LsdException Locked="false" Priority="66" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Medium List 2 Accent 6"/>
+  <w:LsdException Locked="false" Priority="67" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Medium Grid 1 Accent 6"/>
+  <w:LsdException Locked="false" Priority="68" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Medium Grid 2 Accent 6"/>
+  <w:LsdException Locked="false" Priority="69" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Medium Grid 3 Accent 6"/>
+  <w:LsdException Locked="false" Priority="70" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Dark List Accent 6"/>
+  <w:LsdException Locked="false" Priority="71" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Colorful Shading Accent 6"/>
+  <w:LsdException Locked="false" Priority="72" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Colorful List Accent 6"/>
+  <w:LsdException Locked="false" Priority="73" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Colorful Grid Accent 6"/>
+  <w:LsdException Locked="false" Priority="19" SemiHidden="false"
+   UnhideWhenUsed="false" QFormat="true" Name="Subtle Emphasis"/>
+  <w:LsdException Locked="false" Priority="21" SemiHidden="false"
+   UnhideWhenUsed="false" QFormat="true" Name="Intense Emphasis"/>
+  <w:LsdException Locked="false" Priority="31" SemiHidden="false"
+   UnhideWhenUsed="false" QFormat="true" Name="Subtle Reference"/>
+  <w:LsdException Locked="false" Priority="32" SemiHidden="false"
+   UnhideWhenUsed="false" QFormat="true" Name="Intense Reference"/>
+  <w:LsdException Locked="false" Priority="33" SemiHidden="false"
+   UnhideWhenUsed="false" QFormat="true" Name="Book Title"/>
+  <w:LsdException Locked="false" Priority="37" Name="Bibliography"/>
+  <w:LsdException Locked="false" Priority="39" QFormat="true" Name="TOC Heading"/>
+ </w:LatentStyles>
+</xml><![endif]-->
+<style>
+<!--
+ /* Font Definitions */
+ @font-face
+	{font-family:"Cambria Math";
+	panose-1:2 4 5 3 5 4 6 3 2 4;
+	mso-font-charset:1;
+	mso-generic-font-family:roman;
+	mso-font-format:other;
+	mso-font-pitch:variable;
+	mso-font-signature:0 0 0 0 0 0;}
+@font-face
+	{font-family:Calibri;
+	panose-1:2 15 5 2 2 2 4 3 2 4;
+	mso-font-charset:204;
+	mso-generic-font-family:swiss;
+	mso-font-pitch:variable;
+	mso-font-signature:-1610611985 1073750139 0 0 159 0;}
+ /* Style Definitions */
+ p.MsoNormal, li.MsoNormal, div.MsoNormal
+	{mso-style-unhide:no;
+	mso-style-qformat:yes;
+	mso-style-parent:"";
+	margin-top:0cm;
+	margin-right:0cm;
+	margin-bottom:10.0pt;
+	margin-left:0cm;
+	line-height:115%;
+	mso-pagination:widow-orphan;
+	font-size:11.0pt;
+	font-family:"Calibri","sans-serif";
+	mso-ascii-font-family:Calibri;
+	mso-ascii-theme-font:minor-latin;
+	mso-fareast-font-family:Calibri;
+	mso-fareast-theme-font:minor-latin;
+	mso-hansi-font-family:Calibri;
+	mso-hansi-theme-font:minor-latin;
+	mso-bidi-font-family:"Times New Roman";
+	mso-bidi-theme-font:minor-bidi;
+	mso-fareast-language:EN-US;}
+.MsoChpDefault
+	{mso-style-type:export-only;
+	mso-default-props:yes;
+	mso-ascii-font-family:Calibri;
+	mso-ascii-theme-font:minor-latin;
+	mso-fareast-font-family:Calibri;
+	mso-fareast-theme-font:minor-latin;
+	mso-hansi-font-family:Calibri;
+	mso-hansi-theme-font:minor-latin;
+	mso-bidi-font-family:"Times New Roman";
+	mso-bidi-theme-font:minor-bidi;
+	mso-fareast-language:EN-US;}
+.MsoPapDefault
+	{mso-style-type:export-only;
+	margin-bottom:10.0pt;
+	line-height:115%;}
+@page WordSection1
+	{size:595.3pt 841.9pt;
+	margin:2.0cm 42.5pt 2.0cm 3.0cm;
+	mso-header-margin:35.4pt;
+	mso-footer-margin:35.4pt;
+	mso-paper-source:0;}
+div.WordSection1
+	{page:WordSection1;}
+-->
+</style>
+<!--[if gte mso 10]>
+<style>
+ /* Style Definitions */
+ table.MsoNormalTable
+	{mso-style-name:"Обычная таблица";
+	mso-tstyle-rowband-size:0;
+	mso-tstyle-colband-size:0;
+	mso-style-noshow:yes;
+	mso-style-priority:99;
+	mso-style-qformat:yes;
+	mso-style-parent:"";
+	mso-padding-alt:0cm 5.4pt 0cm 5.4pt;
+	mso-para-margin-top:0cm;
+	mso-para-margin-right:0cm;
+	mso-para-margin-bottom:10.0pt;
+	mso-para-margin-left:0cm;
+	line-height:115%;
+	mso-pagination:widow-orphan;
+	font-size:11.0pt;
+	font-family:"Calibri","sans-serif";
+	mso-ascii-font-family:Calibri;
+	mso-ascii-theme-font:minor-latin;
+	mso-hansi-font-family:Calibri;
+	mso-hansi-theme-font:minor-latin;
+	mso-fareast-language:EN-US;}
+table.MsoTableGrid
+	{mso-style-name:"Сетка таблицы";
+	mso-tstyle-rowband-size:0;
+	mso-tstyle-colband-size:0;
+	mso-style-priority:59;
+	mso-style-unhide:no;
+	border:solid black 1.0pt;
+	mso-border-themecolor:text1;
+	mso-border-alt:solid black .5pt;
+	mso-border-themecolor:text1;
+	mso-padding-alt:0cm 5.4pt 0cm 5.4pt;
+	mso-border-insideh:.5pt solid black;
+	mso-border-insideh-themecolor:text1;
+	mso-border-insidev:.5pt solid black;
+	mso-border-insidev-themecolor:text1;
+	mso-para-margin:0cm;
+	mso-para-margin-bottom:.0001pt;
+	mso-pagination:widow-orphan;
+	font-size:11.0pt;
+	font-family:"Calibri","sans-serif";
+	mso-ascii-font-family:Calibri;
+	mso-ascii-theme-font:minor-latin;
+	mso-hansi-font-family:Calibri;
+	mso-hansi-theme-font:minor-latin;
+	mso-fareast-language:EN-US;}
+</style>
+<![endif]--><!--[if gte mso 9]><xml>
+ <o:shapedefaults v:ext="edit" spidmax="3074"/>
+</xml><![endif]--><!--[if gte mso 9]><xml>
+ <o:shapelayout v:ext="edit">
+  <o:idmap v:ext="edit" data="1"/>
+ </o:shapelayout></xml><![endif]-->
+</head>
+
+<body lang=RU style='tab-interval:35.4pt'>
+
+<div class=WordSection1>
+
+<p class=MsoNormal style='mso-margin-top-alt:auto;mso-margin-bottom-alt:auto;
+line-height:normal;mso-outline-level:2'><b><span style='mso-bidi-font-size:
+18.0pt;font-family:"Times New Roman","serif";mso-fareast-font-family:"Times New Roman";
+mso-fareast-language:RU'>БЕЗЛИМИТНЫЕ ТАРИФНАЯ ЛИНЕЙКА &quot;ВКЛЮЧАЙСЯ&quot; С
+ФИКСИРОВАННОЙ СКОРОСТЬЮ<o:p></o:p></span></b></p>
+
+<table class=MsoTableGrid border=1 cellspacing=0 cellpadding=0
+ style='border-collapse:collapse;border:none;mso-border-alt:solid black .5pt;
+ mso-border-themecolor:text1;mso-yfti-tbllook:1184;mso-padding-alt:0cm 5.4pt 0cm 5.4pt'>
+ <tr style='mso-yfti-irow:0;mso-yfti-firstrow:yes'>
+  <td width=213 style='width:159.5pt;border:solid black 1.0pt;mso-border-themecolor:
+  text1;mso-border-alt:solid black .5pt;mso-border-themecolor:text1;padding:
+  0cm 5.4pt 0cm 5.4pt'>
+  <p class=MsoNormal align=center style='mso-margin-top-alt:auto;mso-margin-bottom-alt:
+  auto;text-align:center;line-height:normal;mso-outline-level:2'><b><span
+  style='mso-bidi-font-size:18.0pt;font-family:"Times New Roman","serif";
+  mso-fareast-font-family:"Times New Roman";mso-fareast-language:RU'>Тариф<o:p></o:p></span></b></p>
+  </td>
+  <td width=213 valign=top style='width:159.5pt;border:solid black 1.0pt;
+  mso-border-themecolor:text1;border-left:none;mso-border-left-alt:solid black .5pt;
+  mso-border-left-themecolor:text1;mso-border-alt:solid black .5pt;mso-border-themecolor:
+  text1;padding:0cm 5.4pt 0cm 5.4pt'>
+  <p class=MsoNormal align=center style='mso-margin-top-alt:auto;mso-margin-bottom-alt:
+  auto;text-align:center;line-height:normal;mso-outline-level:2'><b><span
+  style='mso-bidi-font-size:18.0pt;font-family:"Times New Roman","serif";
+  mso-fareast-font-family:"Times New Roman";mso-fareast-language:RU'>Скорость
+  доступа ДО,</span></b><b><span style='mso-bidi-font-size:18.0pt;font-family:
+  "Times New Roman","serif";mso-fareast-font-family:"Times New Roman";
+  mso-ansi-language:EN-US;mso-fareast-language:RU'> </span></b><b><span
+  style='mso-bidi-font-size:18.0pt;font-family:"Times New Roman","serif";
+  mso-fareast-font-family:"Times New Roman";mso-fareast-language:RU'>Кбит/сек<o:p></o:p></span></b></p>
+  </td>
+  <td width=213 style='width:159.55pt;border:solid black 1.0pt;mso-border-themecolor:
+  text1;border-left:none;mso-border-left-alt:solid black .5pt;mso-border-left-themecolor:
+  text1;mso-border-alt:solid black .5pt;mso-border-themecolor:text1;padding:
+  0cm 5.4pt 0cm 5.4pt'>
+  <p class=MsoNormal align=center style='margin-bottom:0cm;margin-bottom:.0001pt;
+  text-align:center;line-height:normal'><b><span style='mso-bidi-font-size:
+  18.0pt;font-family:"Times New Roman","serif";mso-fareast-font-family:"Times New Roman";
+  mso-fareast-language:RU'>Ежемесячный платеж, руб., с НДС<o:p></o:p></span></b></p>
+  </td>
+ </tr>
+ <tr style='mso-yfti-irow:1'>
+  <td width=213 style='width:159.5pt;border:solid black 1.0pt;mso-border-themecolor:
+  text1;border-top:none;mso-border-top-alt:solid black .5pt;mso-border-top-themecolor:
+  text1;mso-border-alt:solid black .5pt;mso-border-themecolor:text1;padding:
+  0cm 5.4pt 0cm 5.4pt'>
+  <p class=MsoNormal align=center style='margin-bottom:0cm;margin-bottom:.0001pt;
+  text-align:center;line-height:normal'><span style='font-size:12.0pt;
+  font-family:"Times New Roman","serif";mso-fareast-font-family:"Times New Roman";
+  mso-fareast-language:RU'>Включайся 512<o:p></o:p></span></p>
+  </td>
+  <td width=213 style='width:159.5pt;border-top:none;border-left:none;
+  border-bottom:solid black 1.0pt;mso-border-bottom-themecolor:text1;
+  border-right:solid black 1.0pt;mso-border-right-themecolor:text1;mso-border-top-alt:
+  solid black .5pt;mso-border-top-themecolor:text1;mso-border-left-alt:solid black .5pt;
+  mso-border-left-themecolor:text1;mso-border-alt:solid black .5pt;mso-border-themecolor:
+  text1;padding:0cm 5.4pt 0cm 5.4pt'>
+  <p class=MsoNormal align=center style='margin-bottom:0cm;margin-bottom:.0001pt;
+  text-align:center;line-height:normal'><span style='font-size:12.0pt;
+  font-family:"Times New Roman","serif";mso-fareast-font-family:"Times New Roman";
+  mso-fareast-language:RU'>512<o:p></o:p></span></p>
+  </td>
+  <td width=213 style='width:159.55pt;border-top:none;border-left:none;
+  border-bottom:solid black 1.0pt;mso-border-bottom-themecolor:text1;
+  border-right:solid black 1.0pt;mso-border-right-themecolor:text1;mso-border-top-alt:
+  solid black .5pt;mso-border-top-themecolor:text1;mso-border-left-alt:solid black .5pt;
+  mso-border-left-themecolor:text1;mso-border-alt:solid black .5pt;mso-border-themecolor:
+  text1;padding:0cm 5.4pt 0cm 5.4pt'>
+  <p class=MsoNormal align=center style='margin-bottom:0cm;margin-bottom:.0001pt;
+  text-align:center;line-height:normal'><span style='font-size:12.0pt;
+  font-family:"Times New Roman","serif";mso-fareast-font-family:"Times New Roman";
+  mso-fareast-language:RU'>300,00<o:p></o:p></span></p>
+  </td>
+ </tr>
+ <tr style='mso-yfti-irow:2'>
+  <td width=213 style='width:159.5pt;border:solid black 1.0pt;mso-border-themecolor:
+  text1;border-top:none;mso-border-top-alt:solid black .5pt;mso-border-top-themecolor:
+  text1;mso-border-alt:solid black .5pt;mso-border-themecolor:text1;padding:
+  0cm 5.4pt 0cm 5.4pt'>
+  <p class=MsoNormal align=center style='margin-bottom:0cm;margin-bottom:.0001pt;
+  text-align:center;line-height:normal'><span style='font-size:12.0pt;
+  font-family:"Times New Roman","serif";mso-fareast-font-family:"Times New Roman";
+  mso-fareast-language:RU'>Включайся 1<o:p></o:p></span></p>
+  </td>
+  <td width=213 style='width:159.5pt;border-top:none;border-left:none;
+  border-bottom:solid black 1.0pt;mso-border-bottom-themecolor:text1;
+  border-right:solid black 1.0pt;mso-border-right-themecolor:text1;mso-border-top-alt:
+  solid black .5pt;mso-border-top-themecolor:text1;mso-border-left-alt:solid black .5pt;
+  mso-border-left-themecolor:text1;mso-border-alt:solid black .5pt;mso-border-themecolor:
+  text1;padding:0cm 5.4pt 0cm 5.4pt'>
+  <p class=MsoNormal align=center style='margin-bottom:0cm;margin-bottom:.0001pt;
+  text-align:center;line-height:normal'><span style='font-size:12.0pt;
+  font-family:"Times New Roman","serif";mso-fareast-font-family:"Times New Roman";
+  mso-fareast-language:RU'>1000<o:p></o:p></span></p>
+  </td>
+  <td width=213 style='width:159.55pt;border-top:none;border-left:none;
+  border-bottom:solid black 1.0pt;mso-border-bottom-themecolor:text1;
+  border-right:solid black 1.0pt;mso-border-right-themecolor:text1;mso-border-top-alt:
+  solid black .5pt;mso-border-top-themecolor:text1;mso-border-left-alt:solid black .5pt;
+  mso-border-left-themecolor:text1;mso-border-alt:solid black .5pt;mso-border-themecolor:
+  text1;padding:0cm 5.4pt 0cm 5.4pt'>
+  <p class=MsoNormal align=center style='margin-bottom:0cm;margin-bottom:.0001pt;
+  text-align:center;line-height:normal'><span style='font-size:12.0pt;
+  font-family:"Times New Roman","serif";mso-fareast-font-family:"Times New Roman";
+  mso-fareast-language:RU'>450,00<o:p></o:p></span></p>
+  </td>
+ </tr>
+ <tr style='mso-yfti-irow:3'>
+  <td width=213 style='width:159.5pt;border:solid black 1.0pt;mso-border-themecolor:
+  text1;border-top:none;mso-border-top-alt:solid black .5pt;mso-border-top-themecolor:
+  text1;mso-border-alt:solid black .5pt;mso-border-themecolor:text1;padding:
+  0cm 5.4pt 0cm 5.4pt'>
+  <p class=MsoNormal align=center style='margin-bottom:0cm;margin-bottom:.0001pt;
+  text-align:center;line-height:normal'><span style='font-size:12.0pt;
+  font-family:"Times New Roman","serif";mso-fareast-font-family:"Times New Roman";
+  mso-fareast-language:RU'>Включайся 2<o:p></o:p></span></p>
+  </td>
+  <td width=213 style='width:159.5pt;border-top:none;border-left:none;
+  border-bottom:solid black 1.0pt;mso-border-bottom-themecolor:text1;
+  border-right:solid black 1.0pt;mso-border-right-themecolor:text1;mso-border-top-alt:
+  solid black .5pt;mso-border-top-themecolor:text1;mso-border-left-alt:solid black .5pt;
+  mso-border-left-themecolor:text1;mso-border-alt:solid black .5pt;mso-border-themecolor:
+  text1;padding:0cm 5.4pt 0cm 5.4pt'>
+  <p class=MsoNormal align=center style='margin-bottom:0cm;margin-bottom:.0001pt;
+  text-align:center;line-height:normal'><span style='font-size:12.0pt;
+  font-family:"Times New Roman","serif";mso-fareast-font-family:"Times New Roman";
+  mso-fareast-language:RU'>2000<o:p></o:p></span></p>
+  </td>
+  <td width=213 style='width:159.55pt;border-top:none;border-left:none;
+  border-bottom:solid black 1.0pt;mso-border-bottom-themecolor:text1;
+  border-right:solid black 1.0pt;mso-border-right-themecolor:text1;mso-border-top-alt:
+  solid black .5pt;mso-border-top-themecolor:text1;mso-border-left-alt:solid black .5pt;
+  mso-border-left-themecolor:text1;mso-border-alt:solid black .5pt;mso-border-themecolor:
+  text1;padding:0cm 5.4pt 0cm 5.4pt'>
+  <p class=MsoNormal align=center style='margin-bottom:0cm;margin-bottom:.0001pt;
+  text-align:center;line-height:normal'><span style='font-size:12.0pt;
+  font-family:"Times New Roman","serif";mso-fareast-font-family:"Times New Roman";
+  mso-fareast-language:RU'>570,00<o:p></o:p></span></p>
+  </td>
+ </tr>
+ <tr style='mso-yfti-irow:4'>
+  <td width=213 style='width:159.5pt;border:solid black 1.0pt;mso-border-themecolor:
+  text1;border-top:none;mso-border-top-alt:solid black .5pt;mso-border-top-themecolor:
+  text1;mso-border-alt:solid black .5pt;mso-border-themecolor:text1;padding:
+  0cm 5.4pt 0cm 5.4pt'>
+  <p class=MsoNormal align=center style='margin-bottom:0cm;margin-bottom:.0001pt;
+  text-align:center;line-height:normal'><span style='font-size:12.0pt;
+  font-family:"Times New Roman","serif";mso-fareast-font-family:"Times New Roman";
+  mso-fareast-language:RU'>Включайся 4<o:p></o:p></span></p>
+  </td>
+  <td width=213 style='width:159.5pt;border-top:none;border-left:none;
+  border-bottom:solid black 1.0pt;mso-border-bottom-themecolor:text1;
+  border-right:solid black 1.0pt;mso-border-right-themecolor:text1;mso-border-top-alt:
+  solid black .5pt;mso-border-top-themecolor:text1;mso-border-left-alt:solid black .5pt;
+  mso-border-left-themecolor:text1;mso-border-alt:solid black .5pt;mso-border-themecolor:
+  text1;padding:0cm 5.4pt 0cm 5.4pt'>
+  <p class=MsoNormal align=center style='margin-bottom:0cm;margin-bottom:.0001pt;
+  text-align:center;line-height:normal'><span style='font-size:12.0pt;
+  font-family:"Times New Roman","serif";mso-fareast-font-family:"Times New Roman";
+  mso-fareast-language:RU'>4000<o:p></o:p></span></p>
+  </td>
+  <td width=213 style='width:159.55pt;border-top:none;border-left:none;
+  border-bottom:solid black 1.0pt;mso-border-bottom-themecolor:text1;
+  border-right:solid black 1.0pt;mso-border-right-themecolor:text1;mso-border-top-alt:
+  solid black .5pt;mso-border-top-themecolor:text1;mso-border-left-alt:solid black .5pt;
+  mso-border-left-themecolor:text1;mso-border-alt:solid black .5pt;mso-border-themecolor:
+  text1;padding:0cm 5.4pt 0cm 5.4pt'>
+  <p class=MsoNormal align=center style='margin-bottom:0cm;margin-bottom:.0001pt;
+  text-align:center;line-height:normal'><span style='font-size:12.0pt;
+  font-family:"Times New Roman","serif";mso-fareast-font-family:"Times New Roman";
+  mso-fareast-language:RU'>750,00<o:p></o:p></span></p>
+  </td>
+ </tr>
+ <tr style='mso-yfti-irow:5;mso-yfti-lastrow:yes'>
+  <td width=213 style='width:159.5pt;border:solid black 1.0pt;mso-border-themecolor:
+  text1;border-top:none;mso-border-top-alt:solid black .5pt;mso-border-top-themecolor:
+  text1;mso-border-alt:solid black .5pt;mso-border-themecolor:text1;padding:
+  0cm 5.4pt 0cm 5.4pt'>
+  <p class=MsoNormal align=center style='margin-bottom:0cm;margin-bottom:.0001pt;
+  text-align:center;line-height:normal'><span style='font-size:12.0pt;
+  font-family:"Times New Roman","serif";mso-fareast-font-family:"Times New Roman";
+  mso-fareast-language:RU'>Включайся 8<o:p></o:p></span></p>
+  </td>
+  <td width=213 style='width:159.5pt;border-top:none;border-left:none;
+  border-bottom:solid black 1.0pt;mso-border-bottom-themecolor:text1;
+  border-right:solid black 1.0pt;mso-border-right-themecolor:text1;mso-border-top-alt:
+  solid black .5pt;mso-border-top-themecolor:text1;mso-border-left-alt:solid black .5pt;
+  mso-border-left-themecolor:text1;mso-border-alt:solid black .5pt;mso-border-themecolor:
+  text1;padding:0cm 5.4pt 0cm 5.4pt'>
+  <p class=MsoNormal align=center style='margin-bottom:0cm;margin-bottom:.0001pt;
+  text-align:center;line-height:normal'><span style='font-size:12.0pt;
+  font-family:"Times New Roman","serif";mso-fareast-font-family:"Times New Roman";
+  mso-fareast-language:RU'>8000<o:p></o:p></span></p>
+  </td>
+  <td width=213 style='width:159.55pt;border-top:none;border-left:none;
+  border-bottom:solid black 1.0pt;mso-border-bottom-themecolor:text1;
+  border-right:solid black 1.0pt;mso-border-right-themecolor:text1;mso-border-top-alt:
+  solid black .5pt;mso-border-top-themecolor:text1;mso-border-left-alt:solid black .5pt;
+  mso-border-left-themecolor:text1;mso-border-alt:solid black .5pt;mso-border-themecolor:
+  text1;padding:0cm 5.4pt 0cm 5.4pt'>
+  <p class=MsoNormal align=center style='margin-bottom:0cm;margin-bottom:.0001pt;
+  text-align:center;line-height:normal'><span style='font-size:12.0pt;
+  font-family:"Times New Roman","serif";mso-fareast-font-family:"Times New Roman";
+  mso-fareast-language:RU'>1000,00<o:p></o:p></span></p>
+  </td>
+ </tr>
+</table>
+
+<p class=MsoNormal style='mso-margin-top-alt:auto;mso-margin-bottom-alt:auto;
+line-height:normal;mso-outline-level:2'><b><span style='mso-bidi-font-size:
+18.0pt;font-family:"Times New Roman","serif";mso-fareast-font-family:"Times New Roman";
+mso-fareast-language:RU'>БЕЗЛИМИТНЫЕ ТАРИФНАЯ ЛИНЕЙКА &quot;ВКЛЮЧАЙСЯ +&quot; С
+ИЗМЕНЯЕМОЙ СКОРОСТЬЮ<o:p></o:p></span></b></p>
+
+<table class=MsoTableGrid border=1 cellspacing=0 cellpadding=0
+ style='border-collapse:collapse;border:none;mso-border-alt:solid black .5pt;
+ mso-border-themecolor:text1;mso-yfti-tbllook:1184;mso-padding-alt:0cm 5.4pt 0cm 5.4pt'>
+ <tr style='mso-yfti-irow:0;mso-yfti-firstrow:yes'>
+  <td width=213 style='width:159.5pt;border:solid black 1.0pt;mso-border-themecolor:
+  text1;mso-border-alt:solid black .5pt;mso-border-themecolor:text1;padding:
+  0cm 5.4pt 0cm 5.4pt'>
+  <p class=MsoNormal align=center style='mso-margin-top-alt:auto;mso-margin-bottom-alt:
+  auto;text-align:center;line-height:normal;mso-outline-level:2'><b><span
+  style='mso-bidi-font-size:18.0pt;font-family:"Times New Roman","serif";
+  mso-fareast-font-family:"Times New Roman";mso-fareast-language:RU'>Тариф<o:p></o:p></span></b></p>
+  </td>
+  <td width=213 valign=top style='width:159.5pt;border:solid black 1.0pt;
+  mso-border-themecolor:text1;border-left:none;mso-border-left-alt:solid black .5pt;
+  mso-border-left-themecolor:text1;mso-border-alt:solid black .5pt;mso-border-themecolor:
+  text1;padding:0cm 5.4pt 0cm 5.4pt'>
+  <p class=MsoNormal align=center style='mso-margin-top-alt:auto;mso-margin-bottom-alt:
+  auto;text-align:center;line-height:normal;mso-outline-level:2'><b><span
+  style='mso-bidi-font-size:18.0pt;font-family:"Times New Roman","serif";
+  mso-fareast-font-family:"Times New Roman";mso-fareast-language:RU'>Скорость
+  доступа ДО, Кбит/сек, днем/ночью<o:p></o:p></span></b></p>
+  </td>
+  <td width=213 style='width:159.55pt;border:solid black 1.0pt;mso-border-themecolor:
+  text1;border-left:none;mso-border-left-alt:solid black .5pt;mso-border-left-themecolor:
+  text1;mso-border-alt:solid black .5pt;mso-border-themecolor:text1;padding:
+  0cm 5.4pt 0cm 5.4pt'>
+  <p class=MsoNormal align=center style='margin-bottom:0cm;margin-bottom:.0001pt;
+  text-align:center;line-height:normal'><b><span style='mso-bidi-font-size:
+  18.0pt;font-family:"Times New Roman","serif";mso-fareast-font-family:"Times New Roman";
+  mso-fareast-language:RU'>Ежемесячный платеж, руб., с НДС<o:p></o:p></span></b></p>
+  </td>
+ </tr>
+ <tr style='mso-yfti-irow:1'>
+  <td width=213 style='width:159.5pt;border:solid black 1.0pt;mso-border-themecolor:
+  text1;border-top:none;mso-border-top-alt:solid black .5pt;mso-border-top-themecolor:
+  text1;mso-border-alt:solid black .5pt;mso-border-themecolor:text1;padding:
+  0cm 5.4pt 0cm 5.4pt'>
+  <p class=MsoNormal align=center style='margin-bottom:0cm;margin-bottom:.0001pt;
+  text-align:center;line-height:normal'><span style='font-size:12.0pt;
+  font-family:"Times New Roman","serif";mso-fareast-font-family:"Times New Roman";
+  mso-fareast-language:RU'>Включайся 512 +<o:p></o:p></span></p>
+  </td>
+  <td width=213 style='width:159.5pt;border-top:none;border-left:none;
+  border-bottom:solid black 1.0pt;mso-border-bottom-themecolor:text1;
+  border-right:solid black 1.0pt;mso-border-right-themecolor:text1;mso-border-top-alt:
+  solid black .5pt;mso-border-top-themecolor:text1;mso-border-left-alt:solid black .5pt;
+  mso-border-left-themecolor:text1;mso-border-alt:solid black .5pt;mso-border-themecolor:
+  text1;padding:0cm 5.4pt 0cm 5.4pt'>
+  <p class=MsoNormal align=center style='margin-bottom:0cm;margin-bottom:.0001pt;
+  text-align:center;line-height:normal'><span style='font-size:12.0pt;
+  font-family:"Times New Roman","serif";mso-fareast-font-family:"Times New Roman";
+  mso-fareast-language:RU'>512/1000<o:p></o:p></span></p>
+  </td>
+  <td width=213 style='width:159.55pt;border-top:none;border-left:none;
+  border-bottom:solid black 1.0pt;mso-border-bottom-themecolor:text1;
+  border-right:solid black 1.0pt;mso-border-right-themecolor:text1;mso-border-top-alt:
+  solid black .5pt;mso-border-top-themecolor:text1;mso-border-left-alt:solid black .5pt;
+  mso-border-left-themecolor:text1;mso-border-alt:solid black .5pt;mso-border-themecolor:
+  text1;padding:0cm 5.4pt 0cm 5.4pt'>
+  <p class=MsoNormal align=center style='margin-bottom:0cm;margin-bottom:.0001pt;
+  text-align:center;line-height:normal'><span style='font-size:12.0pt;
+  font-family:"Times New Roman","serif";mso-fareast-font-family:"Times New Roman";
+  mso-fareast-language:RU'>350,00<o:p></o:p></span></p>
+  </td>
+ </tr>
+ <tr style='mso-yfti-irow:2'>
+  <td width=213 style='width:159.5pt;border:solid black 1.0pt;mso-border-themecolor:
+  text1;border-top:none;mso-border-top-alt:solid black .5pt;mso-border-top-themecolor:
+  text1;mso-border-alt:solid black .5pt;mso-border-themecolor:text1;padding:
+  0cm 5.4pt 0cm 5.4pt'>
+  <p class=MsoNormal align=center style='margin-bottom:0cm;margin-bottom:.0001pt;
+  text-align:center;line-height:normal'><span style='font-size:12.0pt;
+  font-family:"Times New Roman","serif";mso-fareast-font-family:"Times New Roman";
+  mso-fareast-language:RU'>Включайся 1 +<o:p></o:p></span></p>
+  </td>
+  <td width=213 style='width:159.5pt;border-top:none;border-left:none;
+  border-bottom:solid black 1.0pt;mso-border-bottom-themecolor:text1;
+  border-right:solid black 1.0pt;mso-border-right-themecolor:text1;mso-border-top-alt:
+  solid black .5pt;mso-border-top-themecolor:text1;mso-border-left-alt:solid black .5pt;
+  mso-border-left-themecolor:text1;mso-border-alt:solid black .5pt;mso-border-themecolor:
+  text1;padding:0cm 5.4pt 0cm 5.4pt'>
+  <p class=MsoNormal align=center style='margin-bottom:0cm;margin-bottom:.0001pt;
+  text-align:center;line-height:normal'><span style='font-size:12.0pt;
+  font-family:"Times New Roman","serif";mso-fareast-font-family:"Times New Roman";
+  mso-fareast-language:RU'>1000/2000<o:p></o:p></span></p>
+  </td>
+  <td width=213 style='width:159.55pt;border-top:none;border-left:none;
+  border-bottom:solid black 1.0pt;mso-border-bottom-themecolor:text1;
+  border-right:solid black 1.0pt;mso-border-right-themecolor:text1;mso-border-top-alt:
+  solid black .5pt;mso-border-top-themecolor:text1;mso-border-left-alt:solid black .5pt;
+  mso-border-left-themecolor:text1;mso-border-alt:solid black .5pt;mso-border-themecolor:
+  text1;padding:0cm 5.4pt 0cm 5.4pt'>
+  <p class=MsoNormal align=center style='margin-bottom:0cm;margin-bottom:.0001pt;
+  text-align:center;line-height:normal'><span style='font-size:12.0pt;
+  font-family:"Times New Roman","serif";mso-fareast-font-family:"Times New Roman";
+  mso-fareast-language:RU'>500,00<o:p></o:p></span></p>
+  </td>
+ </tr>
+ <tr style='mso-yfti-irow:3'>
+  <td width=213 style='width:159.5pt;border:solid black 1.0pt;mso-border-themecolor:
+  text1;border-top:none;mso-border-top-alt:solid black .5pt;mso-border-top-themecolor:
+  text1;mso-border-alt:solid black .5pt;mso-border-themecolor:text1;padding:
+  0cm 5.4pt 0cm 5.4pt'>
+  <p class=MsoNormal align=center style='margin-bottom:0cm;margin-bottom:.0001pt;
+  text-align:center;line-height:normal'><span style='font-size:12.0pt;
+  font-family:"Times New Roman","serif";mso-fareast-font-family:"Times New Roman";
+  mso-fareast-language:RU'>Включайся 2 +<o:p></o:p></span></p>
+  </td>
+  <td width=213 style='width:159.5pt;border-top:none;border-left:none;
+  border-bottom:solid black 1.0pt;mso-border-bottom-themecolor:text1;
+  border-right:solid black 1.0pt;mso-border-right-themecolor:text1;mso-border-top-alt:
+  solid black .5pt;mso-border-top-themecolor:text1;mso-border-left-alt:solid black .5pt;
+  mso-border-left-themecolor:text1;mso-border-alt:solid black .5pt;mso-border-themecolor:
+  text1;padding:0cm 5.4pt 0cm 5.4pt'>
+  <p class=MsoNormal align=center style='margin-bottom:0cm;margin-bottom:.0001pt;
+  text-align:center;line-height:normal'><span style='font-size:12.0pt;
+  font-family:"Times New Roman","serif";mso-fareast-font-family:"Times New Roman";
+  mso-fareast-language:RU'>2000/4000<o:p></o:p></span></p>
+  </td>
+  <td width=213 style='width:159.55pt;border-top:none;border-left:none;
+  border-bottom:solid black 1.0pt;mso-border-bottom-themecolor:text1;
+  border-right:solid black 1.0pt;mso-border-right-themecolor:text1;mso-border-top-alt:
+  solid black .5pt;mso-border-top-themecolor:text1;mso-border-left-alt:solid black .5pt;
+  mso-border-left-themecolor:text1;mso-border-alt:solid black .5pt;mso-border-themecolor:
+  text1;padding:0cm 5.4pt 0cm 5.4pt'>
+  <p class=MsoNormal align=center style='margin-bottom:0cm;margin-bottom:.0001pt;
+  text-align:center;line-height:normal'><span style='font-size:12.0pt;
+  font-family:"Times New Roman","serif";mso-fareast-font-family:"Times New Roman";
+  mso-fareast-language:RU'>650,00<o:p></o:p></span></p>
+  </td>
+ </tr>
+ <tr style='mso-yfti-irow:4;mso-yfti-lastrow:yes'>
+  <td width=213 style='width:159.5pt;border:solid black 1.0pt;mso-border-themecolor:
+  text1;border-top:none;mso-border-top-alt:solid black .5pt;mso-border-top-themecolor:
+  text1;mso-border-alt:solid black .5pt;mso-border-themecolor:text1;padding:
+  0cm 5.4pt 0cm 5.4pt'>
+  <p class=MsoNormal align=center style='margin-bottom:0cm;margin-bottom:.0001pt;
+  text-align:center;line-height:normal'><span style='font-size:12.0pt;
+  font-family:"Times New Roman","serif";mso-fareast-font-family:"Times New Roman";
+  mso-fareast-language:RU'>Включайся 4 +<o:p></o:p></span></p>
+  </td>
+  <td width=213 style='width:159.5pt;border-top:none;border-left:none;
+  border-bottom:solid black 1.0pt;mso-border-bottom-themecolor:text1;
+  border-right:solid black 1.0pt;mso-border-right-themecolor:text1;mso-border-top-alt:
+  solid black .5pt;mso-border-top-themecolor:text1;mso-border-left-alt:solid black .5pt;
+  mso-border-left-themecolor:text1;mso-border-alt:solid black .5pt;mso-border-themecolor:
+  text1;padding:0cm 5.4pt 0cm 5.4pt'>
+  <p class=MsoNormal align=center style='margin-bottom:0cm;margin-bottom:.0001pt;
+  text-align:center;line-height:normal'><span style='font-size:12.0pt;
+  font-family:"Times New Roman","serif";mso-fareast-font-family:"Times New Roman";
+  mso-fareast-language:RU'>4000/8000<o:p></o:p></span></p>
+  </td>
+  <td width=213 style='width:159.55pt;border-top:none;border-left:none;
+  border-bottom:solid black 1.0pt;mso-border-bottom-themecolor:text1;
+  border-right:solid black 1.0pt;mso-border-right-themecolor:text1;mso-border-top-alt:
+  solid black .5pt;mso-border-top-themecolor:text1;mso-border-left-alt:solid black .5pt;
+  mso-border-left-themecolor:text1;mso-border-alt:solid black .5pt;mso-border-themecolor:
+  text1;padding:0cm 5.4pt 0cm 5.4pt'>
+  <p class=MsoNormal align=center style='margin-bottom:0cm;margin-bottom:.0001pt;
+  text-align:center;line-height:normal'><span style='font-size:12.0pt;
+  font-family:"Times New Roman","serif";mso-fareast-font-family:"Times New Roman";
+  mso-fareast-language:RU'>850,00<o:p></o:p></span></p>
+  </td>
+ </tr>
+</table>
+
+<p class=MsoNormal><o:p>&nbsp;</o:p></p>
+
+</div>
+
+</body>
+
+</html>
+
+    </p>
+
+    <p>&nbsp;</p>
+
+
+    <h2 class="news-h2">
+      <a onfocus="this.blur()" href="">Проведение плановых работ 20.07.2010 г.</a> <span>(15.07.2010)</span>
+    </h2>
+
+    <p>
+      В связи с плановыми работами на узле ЗАО «Форатек Коммуникейшн» у клиентов, подключенных с номеров 6-хх-хх в г. Новоуральск, 20 июля 2010 года с 8.00 до 15.00 возможны перерывы связи.
+Приносим извинения за возможные неудобства.
+
+    </p>
+
+    <p>&nbsp;</p>
+
+
+    <h2 class="news-h2">
+      <a onfocus="this.blur()" href="">НОВОУРАЛЬСК! Интернет еще быстрее! Еще дешевле!</a> <span>(21.06.2010)</span>
+    </h2>
+
+    <p>
+      <p><strong>Летний подарок от FORATEC</strong>: Интернет с большей скоростью за меньшие деньги!
+<p>Уважаемые абоненты!</p>
+
+<p>C <strong>01.07.2010</strong> все абоненты-физические лица, потребляющие услугу доступа к Интернет по технологии ADSL в г. Новоуральск, по умолчанию будут переведены на тарифы согласно схеме: </p>
+
+<table cellspacing="0" cellpadding="0" class="table-style">
+ <tbody>
+  <tr class="table-style-header">
+    <td>Текущий тариф</td>
+    <td>Тариф, на который производится переключение</td>
+    <td>Платёж, руб./мес.</td>
+  </tr>
+ </tbody>
+ <tbody>
+ <tr>
+   <td>Безлимитный ADSL  до 128 кбит/с</td>
+   <td>web 256</td>
+   <td>600,00</td>
+ </tr>
+ <tr class="table-style-row">
+   <td>Безлимитный ADSL  до 256 кбит/с</td>
+   <td>web 512</td>
+   <td>700,00</td>
+ </tr>
+ <tr>
+   <td>Безлимитный ADSL  до 512 кбит/с</td>
+   <td>web 1</td>
+   <td>900,00</td>
+ </tr>
+ <tr class="table-style-row">
+   <td>Безлимитный ADSL  до 1 Мб/с</td>
+   <td>web 2</td>
+   <td>1100,00</td>
+ </tr>
+ <tr>
+   <td>Безлимитный ADSL  до 2 Мб/с</td>
+   <td>web 4</td>
+   <td>1500,00</td>
+ </tr>
+ <tr class="table-style-row">
+   <td>Новоуральский Unlim 64</td>
+   <td>web 256</td>
+   <td>600,00</td>
+ </tr>
+ <tr >
+   <td>Безлимитный Студенческий 64</td>
+   <td>web 512</td>
+   <td>700,00</td>
+ </tr>
+ <tr class="table-style-row">
+   <td>Новоуральский Unlim 128</td>
+   <td>web 2</td>
+   <td>1100,00</td>
+ </tr>
+ <tr>
+   <td>Новоуральский Unlim 256</td>
+   <td>web 4</td>
+   <td>1500,00</td>
+ </tr>
+</tbody>
+</table>
+
+<p>Все цены указаны с учетом НДС (18%)</p>
+
+<p>До <strong>01.07.2010г.</strong> Вы можете самостоятельно переключиться на любой тарифный план из линеек <strong>web</strong> и <strong>superweb</strong> в <a href="https://stat.fora.su/">Личном кабинете</a>. 
+
+Подробнее с тарифными планами Вы можете ознакомиться <a href="http://www.fora.su/tariff/broadband_nu">здесь</a>.</p>
+    </p>
+
+    <p>&nbsp;</p>
+
+
+    <h2 class="news-h2">
+      <a onfocus="this.blur()" href="">Новые тарифы dial-up</a> <span>(18.06.2010)</span>
+    </h2>
+
+    <p>
+      <p>Уважаемые абоненты!</p>
+<p>C <b>01.07.2010</b> действуют новые тарифы на услугу  доступа к сети Интернет по технологии dial-up в г. Новоуральск. </p>
+
+<p>Тарифы на услугу "Предоставление доступа к сети Интернет по коммутируемому каналу (dial-up)"</p>
+<table cellspacing="0" cellpadding="0" class="table-style">
+ <tbody>
+  <tr class="table-style-header">
+    <td colspan=3>Классик <sup>*</sup>  (тариф действует по картам доступа "Фора")</td>
+  </tr>
+ </tbody>
+ <tbody>
+ <tr>
+   <td>во время: с 09-00 до 18-00, рабочие дни</td>
+   <td rowspan=3>руб./час</td>
+   <td>19,00</td>
+ </tr>
+ <tr class="table-style-row">
+   <td>в ночное время: с 02-00 до 09-00</td>
+   <td>7,00</td>
+ </tr>
+ <tr>
+   <td>Остальное время <br> (будни с 18-00 до 02-00, выходные и праздничные дни с 9:00 до 02:00):</td>
+   <td>13,00</td>
+ </tr>
+ <tr class="table-style-row">
+   <td colspan=3></td>
+ </tr>
+</tbody>
+
+ <tbody>
+  <tr class="table-style-header">
+    <td colspan=3>ЭкономЪ <sup>*</sup>  (тариф действует по картам доступа "Фора")</td>
+  </tr>
+ </tbody>
+ <tbody>
+ <tr>
+   <td>во время: с 09-00 до 18-00, рабочие дни</td>
+   <td rowspan=3>руб./час</td>
+   <td>17,00</td>
+ </tr>
+ <tr class="table-style-row">
+   <td>в ночное время: с 02-00 до 09-00</td>
+   <td>5,00</td>
+ </tr>
+ <tr>
+   <td>Остальное время <br> (будни с 18-00 до 02-00, выходные и праздничные дни с 9:00 до 02:00):</td>
+   <td>11,00</td>
+ </tr>
+ <tr class="table-style-row">
+   <td colspan=3></td>
+ </tr>
+</tbody>
+
+ <tbody>
+  <tr class="table-style-header">
+    <td colspan=3>Фишка <sup>**</sup>  (тариф действует по картам доступа "Фора")</td>
+  </tr>
+ </tbody>
+ <tbody>
+ <tr>
+   <td rowspan=2>во время: с 09-00 до 18-00, рабочие дни</td>
+   <td>руб./час</td>
+   <td>7,00</td>
+ </tr>
+ <tr>
+   <td>руб./Мб</td>
+   <td>1,50</td>
+ </tr>
+ <tr class="table-style-row">
+   <td rowspan=2>в ночное время: с 02-00 до 09-00</td>
+   <td>руб./час</td>
+   <td>3,00</td>
+ </tr>
+ <tr>
+   <td>руб./Мб</td>
+   <td>1,00</td>
+ </tr>
+ <tr>
+   <td rowspan=2>Остальное время <br> (будни с 18-00 до 02-00, выходные и праздничные дни с 9:00 до 02:00):</td>
+   <td>руб./час</td>
+   <td>5,00</td>
+ </tr>
+ <tr>
+   <td>руб./Мб</td>
+   <td>1,30</td>
+ </tr>
+</tbody>
+</table>
+<blockquote>
+<sup>*</sup>Абоненты оплачивают только время занятия порта, объем передаваемого трафика не учитывается.<br>
+<sup>**</sup>Абоненты оплачивают суммарно время занятия порта и объем передаваемого в сторону абонента трафика.
+</blockquote>
+<p><a href='http://fora.su/foracard/dialup'>Ссылка на тарифы</a></p>
+    </p>
+
+    <p>&nbsp;</p>
+
+
+    <h2 class="news-h2">
+      <a onfocus="this.blur()" href="">ДОМАШНИЙ ИНТЕРНЕТ в Верхней Туре!</a> <span>(04.06.2010)</span>
+    </h2>
+
+    <p>
+      Внимание! Акция для жителей г. Верхняя Тура!
+С 1 июня  по 1 августа 2010 года абоненты физические лица, имеющие модем, могут бесплатно переключиться на тарифные планы Включайся! 
+
+Переключение осуществляется при наличии технической возможности. С 01.08.2010 подключение на данные тарифные планы производится согласно действующим тарифам FORATEC.
+
+Подробную информацию о стоимости доступа к сети Интернет смотрите в разделе Тарифы.
+    </p>
+
+    <p>&nbsp;</p>
+
+
+    <h2 class="news-h2">
+      <a onfocus="this.blur()" href="">Плановые работы 02.06.2010 с 9.00 до 15.00</a> <span>(01.06.2010)</span>
+    </h2>
+
+    <p>
+      2 июня 2010 года с 9.00 до 15.00 в г.Новоуральск будут проводиться плановые работы. В связи с плановыми работами на узле ЗАО «Форатек Коммуникейшн» у клиентов, подключенных с номеров 2-хх-хх в г. Новоуральск, возможны перерывы связи.
+
+
+    </p>
+
+    <p>&nbsp;</p>
+
+
+    <h2 class="news-h2">
+      <a onfocus="this.blur()" href="">НОВЫЕ ТАРИФЫ в мкр. Компрессорный!</a> <span>(01.06.2010)</span>
+    </h2>
+
+    <p>
+      Уважаемые абоненты! 
+С 1 июня 2010 года снижена абонентская плата на тарифной линейке FORA! Теперь тарифы Ready, Stedy, Go стали еще выгоднее.
+
+Также доступны скоростные тарифы FORA super!
+10, 20 и 50 Мбит/с по доступным ценам.
+
+Подробная информация в разделе Тарифы.
+    </p>
+
+    <p>&nbsp;</p>
+
+
+    <h2 class="news-h2">
+      <a onfocus="this.blur()" href="">Плановые работы 24.05.2010</a> <span>(20.05.2010)</span>
+    </h2>
+
+    <p>
+      24 мая  2010 г. с 12:00 до 13:00 для физических лиц в г. Екатеринбург и Свердловской обл. будет недоступна услуга Интернет.
+    </p>
+
+    <p>&nbsp;</p>
+
+
+    <h2 class="news-h2">
+      <a onfocus="this.blur()" href="">Плановые работы на сети компании</a> <span>(18.05.2010)</span>
+    </h2>
+
+    <p>
+      24 мая  2010 г. с 11:00 до 17:00 для абонентов, подключенных в  г. Полевской будут недоступны услуги Телефонии и Интернет.
+    </p>
+
+    <p>&nbsp;</p>
+
+
+    <h2 class="news-h2">
+      <a onfocus="this.blur()" href="">Плановые работы 13.05.2010 с с 9:00 до 15:00 </a> <span>(07.05.2010)</span>
+    </h2>
+
+    <p>
+      В связи с плановыми работами на узле ЗАО «Форатек Коммуникейшн», у клиентов подключенных с номеров 3-хх-хх, 13 мая 2010 года с 9-00 до 15-00 возможны перерывы связи.
+    </p>
+
+    <p>&nbsp;</p>
+
+
+    <h2 class="news-h2">
+      <a onfocus="this.blur()" href="">Плановые работы</a> <span>(23.04.2010)</span>
+    </h2>
+
+    <p>
+      В связи с плановыми работами на узле ЗАО «Форатек Коммуникейшн», у клиентов подключенных с номеров 3-хх-хх, 28 апреля 2010 года с 9-00 до 15-00 возможны перерывы связи.
+    </p>
+
+    <p>&nbsp;</p>
+
+
+    <h2 class="news-h2">
+      <a onfocus="this.blur()" href="">Плановые работы в Новоуральске</a> <span>(19.02.2010)</span>
+    </h2>
+
+    <p>
+      24 и 25 февраля с 09:00 до 17:00 у абонентов в г. Новоуральске, подключенных по технологии ADSL с телефонными номерами  4-хх-хх, в связи с плановыми работами на узле доступа возможны кратковременные перерывы в телефонной связи и в доступе   к сети Интернет продолжительностью менее 30 минут
+
+    </p>
+
+    <p>&nbsp;</p>
+
+
+    <h2 class="news-h2">
+      <a onfocus="this.blur()" href="">Акция «Интернет ТЕСТ-ДРАЙВ»</a> <span>(27.01.2010)</span>
+    </h2>
+
+    <p>
+      Для жителей мкр Компрессорный г. Екатеринбурга.До 01 марта 2010 года подключение к сети Интернет по технологии широкополосного доступа и   обслуживание на безлимитном тарифном плане со скорость 2 Мб/с - БЕСПЛАТНО
+    </p>
+
+    <p>&nbsp;</p>
+
+
+
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="center-bottom"><span class="lt"></span><span class="rt"></span></div>
+
+  </div>
+</div>
+
+<div class="footer block">
+  <div class="banners">
+    <!--
+    <div class="fl"><img src="nodes/banner.gif" alt="" title=""/></div>
+    <div class="fl"><img src="nodes/banner.gif" alt="" title=""/></div>
+    -->
+  </div>
+  <div class="f">
+    <div class="f-l">
+      <div class="f-r">
+
+        <!-- <a href="" onfocus="this.blur()" class="avermaster fr">Сделано в AverMaster</a> -->
+        <span class="avermaster fr">Сделано в AverMaster</span>
+
+        <div class="txt al">Телефон: 7 (343) 345-21-21&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Почта:
+          <a href="mailto:helpdesk@foratec-com.ru">helpdesk@foratec-com.ru</a>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<!--<a href="">Карта проезда</a>-->
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+
+</html>

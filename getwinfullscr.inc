@@ -1,5 +1,6 @@
 proc getwinfullscr
 	local hwnd:DWORD
+	local wplmt:WINDOWPLACEMENT
 	invoke FindWindowA,'Progman','Program Manager'
 	mov [hwnd],eax
 	invoke GetForegroundWindow
@@ -16,19 +17,20 @@ proc getwinfullscr
      ;           jmp .exit
      ;.metka1:
      ;   pop eax
-	invoke GetWindowPlacement,eax,wplmt
+	lea ecx,[wplmt]
+	invoke GetWindowPlacement,eax,ecx
 	.if [wplmt.rcNormalPosition.left]<>0 | [wplmt.rcNormalPosition.top]<>0
-		mov eax,0
+		xor eax,eax
 		jmp .exit
 	.endif
 	invoke GetSystemMetrics,SM_CXSCREEN
 	.if eax>[wplmt.rcNormalPosition.right]
-		mov eax,0
+		xor eax,eax
 		jmp .exit
 	.endif
 	invoke GetSystemMetrics,SM_CYSCREEN
 	.if eax>[wplmt.rcNormalPosition.bottom]
-		mov eax,0
+		xor eax,eax
 		jmp .exit
 	.endif
 	mov eax,1

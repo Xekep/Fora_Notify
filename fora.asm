@@ -22,6 +22,8 @@ TIMER_UPDATE = 666
 TIME_UPDATE = 60*60*1000
 TIMER_SNOW = 668
 TIME_SNOW = 40*1000
+TIMER_POST = 669
+TIME_POST = 1000
 
 ID_LOGO = 100
 ID_LOGO2 = 101
@@ -31,6 +33,7 @@ IDD_LOGIN = 667
 IDD_POPUP = 668
 IDD_TARIF = 669
 IDD_LICENSE = 670
+IDD_POST = 671
 ID_GET = 1
 ID_LOGIN = 19
 IDL_MONEY = 3
@@ -82,12 +85,9 @@ IDM_UPDATE equ 1005
 IDM_ABOUT equ 1006
 IDM_TARIF equ 1007
 IDM_LICENSE equ 1008
+IDM_POST equ 1009
 
 .data
-;---
-coord	RECT	; Размеры окна
-screen	RECT	; Размеры экрана
-;---
 
 NIIF_NONE = 0
 NIIF_INFO = 1
@@ -170,6 +170,7 @@ str5 db 'Проверить обновление',0
 str6 db 'О программе...',0
 str7 db 'Сменить тариф',0
 str8 db 'Лицензия',0
+str9 db 'Отправить отзыв',0
 site db 'http://www.zone66.su',0
 host2 db 'www.soft.zone66.su',0
 flagg db 1
@@ -220,7 +221,7 @@ day db 31,-1,31,30,31,30,31,31,30,31,30,31,0
 lOldWndProc dd ?
 lhwnd dd ?
 OldWndProc2 dd ?
-;LOGO BITMAP
+;---LOGO BITMAP
 hBitmap dd ?
 ps PAINTSTRUCT
 rect RECT
@@ -228,6 +229,11 @@ hdc dd ?
 hMemDC dd ?
 nbitmap dd 0
 snow_mutex dd 0
+;--- Отзывы
+post_time dd 0
+post_count dd 0
+post_button rb 5
+time dd ?
 
 tOldWndProc dd ?
 thUrlBrush  dd ?
@@ -236,7 +242,7 @@ thHyper dd ?
 tOldhwnd dd ?
 
 ;--- ABOUT
-text db 'FORA Notify 0.9.5 by Xekep'
+text db 'FORA Notify 1.0 by Xekep'
 ;db 0ah,0ah,'Данная программа написана',0Ah,'для чуть большей юзабельности',0Ah,'говённого Новоуральского',0Ah,'интернета от ФОРАТЕК.'
 db 0ah,0ah,'Данная программа предназначена',0Ah,'для мониторинга состояния лицевого',0Ah,'счёта оператора форатек.'
 db 0ah,0ah,'Программа распространяется',0Ah,'по лицензии Donationware:'
@@ -272,10 +278,6 @@ hUrlBrush  dd ?
 sscolor dd ?
 hHyper dd ?
 Oldhwnd dd ?
-;--- getwinfullscr
-wplmt WINDOWPLACEMENT
-;--- SetWindowCenter
-dtop RECT
 ;
 title_error   db  'Something Wrong',0
 offset_error  rb  200
@@ -301,7 +303,6 @@ ends
 
 TEMPLATE_ABOUT DLGTEMPLATE DS_CENTER+WS_POPUP+WS_VISIBLE,WS_EX_TOPMOST+WS_EX_TOOLWINDOW,0,0,0,156,65;207,80
 
-ti TOOLINFO
 ;include 'antidebug.inc'
 
 .code
@@ -321,7 +322,7 @@ start:
 ;                invoke MessageBoxA,0,'GlobalFree ERR!',0,0
 ;        .endif
 ;        jmp exit
-;
+
 ;opreg1           db      '<div class="content">*</div>*</div>',0
 
 ;        gomneco db '7<8<<<9789<div class="content">123<<</div>123</div><<<8908908908908908089089089089<<0890890<div class="content">456</div>456<<</div>890890890890<<80890890890890890890<div class="content">789</div>789</div>789789',0;FILE '1.htm'  ;
@@ -339,6 +340,9 @@ start:
 		jmp exit
 	.endif
 	invoke LoadLibrary,'riched32.dll'
+	invoke LoadLibraryA,'msvcrt.dll'
+	invoke GetProcAddress,eax,'time'
+	mov [time],eax
 	invoke GetCommandLineA
 	push eax
 	invoke lstrlenA,eax
@@ -375,7 +379,7 @@ start:
 	mov edi,EXCEPTION_RECORD
 	mov edi,dword [edi+ExceptionAdress]
 	invoke wsprintf,offset_error,lpfmtc,edi,eax,ecx,edx,ebx,esp,ebp,esi,667,416
-	invoke FindWindowA,0,'FORA Notify 0.9.5'
+	invoke FindWindowA,0,'FORA Notify 1.0'
 	invoke MessageBoxA,eax,offset_error,title_error,MB_ICONWARNING
 	jmp exit
 
@@ -465,6 +469,7 @@ proc main hwnd, msg, wparam, lparam
 	invoke AppendMenu,[hMenu],MF_STRING,IDM_UPDATE,str5
 	invoke AppendMenu,[hMenu],MF_STRING,IDM_LICENSE,str8
 	invoke AppendMenu,[hMenu],MF_STRING,IDM_ABOUT,str6
+	invoke AppendMenu,[hMenu],MF_STRING,IDM_POST,str9
 	invoke AppendMenu,[hMenu],MF_SEPARATOR,0,0
 	invoke AppendMenu,[hMenu],MF_STRING,IDM_EXIT,str3
 	invoke GetSystemMenu,[hwnd],0
@@ -473,6 +478,7 @@ proc main hwnd, msg, wparam, lparam
 	invoke AppendMenu,[hMenu2],MF_STRING,IDM_SITE,str4
 	invoke AppendMenu,[hMenu2],MF_STRING,IDM_LICENSE,str8
 	invoke AppendMenu,[hMenu2],MF_STRING,IDM_ABOUT,str6
+	invoke AppendMenu,[hMenu2],MF_STRING,IDM_POST,str9
 	invoke AppendMenu,[hMenu2],MF_SEPARATOR,0,0
 	invoke AppendMenu,[hMenu2],MF_STRING,IDM_EXIT,str3
 	invoke GlobalAlloc,GPTR,MAX_PATH+10
@@ -675,6 +681,11 @@ proc main hwnd, msg, wparam, lparam
 			invoke DialogBoxParamA,[mhandle],IDD_LICENSE,HWND_DESKTOP,plicense,1
 			invoke Shell_NotifyIcon,NIM_ADD,notes
 			jmp .processed
+		.elseif ax=IDM_POST
+			invoke Shell_NotifyIcon,NIM_DELETE,notes
+			invoke DialogBoxParamA,[mhandle],IDD_POST,HWND_DESKTOP,ppost,0
+			invoke Shell_NotifyIcon,NIM_ADD,notes
+			jmp .processed
 		.else
 			invoke DestroyWindow,[hwnd]
 		.endif
@@ -766,6 +777,11 @@ proc main hwnd, msg, wparam, lparam
 	.elseif [wparam]=IDM_EXIT
 		 invoke Shell_NotifyIcon,NIM_DELETE,notes
 		 jmp .wmclose
+	.elseif [wparam]=IDM_POST
+		 invoke ShowWindow,[hwnd],SW_HIDE
+		 invoke DialogBoxParamA,[mhandle],IDD_POST,HWND_DESKTOP,ppost,0
+		 invoke ShowWindow,[hwnd],SW_SHOW
+		 jmp .processed
 	.endif
 	xor eax,eax
 	jmp .finish
@@ -1309,12 +1325,15 @@ proc WindowProcMoney hwnd, msg, wparam, lparam
 endp
 
 proc SetWindowCenter hwnd
-	invoke SystemParametersInfo,SPI_GETWORKAREA,NULL,dtop,FALSE
+	local dtop:RECT
+	lea eax,[dtop]
+	invoke SystemParametersInfo,SPI_GETWORKAREA,NULL,eax,FALSE
 	mov eax,[dtop.right]
 	mov ecx,[dtop.bottom]
 	push eax
 	push ecx
-	invoke GetClientRect,[hwnd],dtop
+	lea eax,[dtop]
+	invoke GetClientRect,[hwnd],eax
 	pop ecx
 	pop eax
 	sub ecx,[dtop.bottom]
@@ -1337,6 +1356,7 @@ endp
 
 proc AddTooltip hwnd, text
 	local hinst:DWORD
+	local ti:TOOLINFO
 	invoke GetWindowLong,[hwnd],GWL_HINSTANCE
 	mov [hinst],eax
 	invoke CreateWindowExA,WS_EX_TOPMOST,TOOLTIPS_CLASS,0,WS_POPUP+TTS_NOPREFIX+TTS_ALWAYSTIP,CW_USEDEFAULT,CW_USEDEFAULT,CW_USEDEFAULT,CW_USEDEFAULT,0,0,eax,0
@@ -1349,8 +1369,10 @@ proc AddTooltip hwnd, text
 	mov [ti.uId],0
 	mov eax,[text]
 	mov [ti.lpszText],eax
-	invoke GetClientRect,[hwnd],ti.Rect
-	invoke SendMessage,esi,TTM_ADDTOOL,0,ti
+	lea eax,[ti.Rect]
+	invoke GetClientRect,[hwnd],eax
+	lea eax,[ti]
+	invoke SendMessage,esi,TTM_ADDTOOL,0,eax
 	ret
 endp
 
@@ -1407,6 +1429,8 @@ display 'Компилим license.inc',13,10
 include 'license.inc'
 
 include 'snow.inc'
+
+include 'post.inc'
 
 .end start
 
